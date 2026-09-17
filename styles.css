@@ -2,9 +2,9 @@
 
 body {
   font-family: 'Segoe UI', system-ui, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1a4d2e;
   min-height: 100vh;
-  color: #fff;
+  color: #ffffff;
   padding: 16px;
 }
 
@@ -16,10 +16,23 @@ body {
 header {
   text-align: center;
   margin-bottom: 20px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 16px;
+  border-bottom: 4px solid #2d6a4f;
 }
 
-h1 { font-size: 1.5rem; margin-bottom: 4px; }
-.subtitle { font-size: 0.9rem; opacity: 0.9; }
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+  color: #1a4d2e;
+  letter-spacing: 0.5px;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #2d6a4f;
+}
 
 .camera-wrapper {
   position: relative;
@@ -28,7 +41,8 @@ h1 { font-size: 1.5rem; margin-bottom: 4px; }
   background: #000;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 4px solid #ffffff;
 }
 
 #video {
@@ -46,8 +60,8 @@ h1 { font-size: 1.5rem; margin-bottom: 4px; }
   justify-content: center;
   font-size: 8rem;
   font-weight: 900;
-  color: #fff;
-  text-shadow: 0 0 30px rgba(0,0,0,0.8);
+  color: #ffffff;
+  text-shadow: 0 0 30px rgba(26, 77, 46, 0.9);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s;
@@ -58,7 +72,7 @@ h1 { font-size: 1.5rem; margin-bottom: 4px; }
 .flash {
   position: absolute;
   inset: 0;
-  background: #fff;
+  background: #ffffff;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s;
@@ -80,47 +94,76 @@ h1 { font-size: 1.5rem; margin-bottom: 4px; }
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s, opacity 0.2s;
+  transition: transform 0.1s, opacity 0.2s, background 0.2s;
+  letter-spacing: 0.3px;
 }
 
 .btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.btn-primary { background: #fff; color: #667eea; }
-.btn-capture { background: #ff6b9d; color: #fff; }
-.btn-print { background: #22c55e; color: #fff; }
-.btn-secondary { background: rgba(255,255,255,0.2); color: #fff; }
+.btn-primary {
+  background: #ffffff;
+  color: #1a4d2e;
+  border: 2px solid #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.btn-capture {
+  background: #2d6a4f;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+.btn-capture:hover:not(:disabled) {
+  background: #40916c;
+}
+
+.btn-print {
+  background: #ffffff;
+  color: #1a4d2e;
+  border: 2px solid #ffffff;
+}
+
+.btn-print:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
 
 .results {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-top: 16px;
+  padding: 12px;
+  background: #ffffff;
+  border-radius: 16px;
+  border-bottom: 4px solid #2d6a4f;
 }
+
+.results:empty { display: none; }
 
 .results img {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border-radius: 8px;
+  border: 2px solid #1a4d2e;
 }
 
 .actions {
   display: flex;
   gap: 10px;
   margin-top: 16px;
-}
-
-.status {
-  text-align: center;
-  margin-top: 12px;
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-/* Print page styles */
-@media print {
-  body { background: #fff; }
-  .no-print { display: none !important; }
 }

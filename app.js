@@ -13,9 +13,8 @@ const flash = document.getElementById('flash');
 
 const MAX_PHOTOS = 3;
 let stream = null;
-let photos = []; // array of { blob, dataUrl, url }
+let photos = [];
 
-// Start camera
 startBtn.addEventListener('click', async () => {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -30,12 +29,10 @@ startBtn.addEventListener('click', async () => {
   }
 });
 
-// Capture with countdown
 captureBtn.addEventListener('click', async () => {
   if (photos.length >= MAX_PHOTOS) return;
   captureBtn.disabled = true;
 
-  // 3-2-1 countdown
   for (let i = 3; i > 0; i--) {
     countdown.textContent = i;
     countdown.classList.add('active');
@@ -43,7 +40,6 @@ captureBtn.addEventListener('click', async () => {
   }
   countdown.classList.remove('active');
 
-  // Flash + capture
   flash.classList.add('active');
   const dataUrl = captureFrame();
   flash.classList.remove('active');
@@ -52,7 +48,6 @@ captureBtn.addEventListener('click', async () => {
   photos.push(dataUrl);
   renderResults();
 
-  // Upload to Supabase
   uploadPhoto(dataUrl).catch(e => console.error('Upload failed:', e));
 
   if (photos.length < MAX_PHOTOS) {
@@ -62,7 +57,6 @@ captureBtn.addEventListener('click', async () => {
   }
 });
 
-// Retake
 retakeBtn.addEventListener('click', () => {
   photos = [];
   results.innerHTML = '';
@@ -70,7 +64,6 @@ retakeBtn.addEventListener('click', () => {
   captureBtn.disabled = false;
 });
 
-// Print
 printBtn.addEventListener('click', () => {
   if (photos.length === 0) return;
   const printWindow = window.open('', '_blank');
@@ -85,7 +78,6 @@ function captureFrame() {
   canvas.height = 800;
   const ctx = canvas.getContext('2d');
 
-  // Center crop to square
   const sx = (video.videoWidth - size) / 2;
   const sy = (video.videoHeight - size) / 2;
   ctx.drawImage(video, sx, sy, size, size, 0, 0, 800, 800);
@@ -122,42 +114,76 @@ function buildPrintHTML(imgs) {
       <style>
         @page { size: 4in 6in; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+
+        html, body {
           width: 4in;
-          padding: 0.15in;
-          background: #fff;
+          height: 6in;
+          background: #ffffff;
+          font-family: 'Segoe UI', system-ui, sans-serif;
+          color: #1a4d2e;
+        }
+
+        body {
           display: flex;
           flex-direction: column;
-          gap: 0.1in;
-          font-family: sans-serif;
+          padding: 0.15in;
+          gap: 0.08in;
         }
+
         .header {
+          background: #ffffff;
+          border: 2px solid #1a4d2e;
+          border-bottom: 4px solid #2d6a4f;
+          border-radius: 8px;
           text-align: center;
-          padding: 6px 0;
-          font-size: 14px;
-          font-weight: bold;
-          color: #764ba2;
+          padding: 6px 8px;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: #1a4d2e;
         }
+
+        .header .sub {
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+          text-transform: none;
+          color: #40916c;
+          margin-top: 2px;
+        }
+
         .row {
           width: 100%;
           aspect-ratio: 1 / 1;
           object-fit: cover;
           display: block;
-          border-radius: 4px;
+          border: 3px solid #1a4d2e;
+          border-radius: 6px;
         }
+
         .footer {
+          background: #ffffff;
+          border-top: 2px solid #2d6a4f;
           text-align: center;
-          font-size: 10px;
-          color: #888;
-          padding: 4px 0;
+          font-size: 8px;
+          letter-spacing: 0.5px;
+          padding: 4px 0 2px;
+          color: #2d6a4f;
+          text-transform: uppercase;
         }
+
         @media print {
-          body { width: 4in; }
+          html, body { width: 4in; height: 6in; }
+          .row { break-inside: avoid; }
         }
       </style>
     </head>
     <body>
-      <div class="header">💖 Happy Teachers Day 💖</div>
+      <div class="header">
+        Happy Teachers Day
+        <div class="sub">Thank you for everything</div>
+      </div>
       ${rows}
       <div class="footer">${new Date().toLocaleDateString()}</div>
       <script>
