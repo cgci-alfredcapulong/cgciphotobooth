@@ -15,11 +15,9 @@ const flash = document.getElementById('flash');
 const MAX_PHOTOS = 3;
 let stream = null;
 let photos = [];
-let facingMode = 'user'; // 'user' = front, 'environment' = back
+let facingMode = 'user';
 
-startBtn.addEventListener('click', async () => {
-  await startCamera();
-});
+startBtn.addEventListener('click', startCamera);
 
 flipBtn.addEventListener('click', async () => {
   if (!stream) return;
@@ -28,9 +26,7 @@ flipBtn.addEventListener('click', async () => {
 });
 
 async function startCamera() {
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-  }
+  if (stream) stream.getTracks().forEach(t => t.stop());
 
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -42,14 +38,7 @@ async function startCamera() {
       audio: false
     });
     video.srcObject = stream;
-
-    // Mirror only the front camera preview
-    if (facingMode === 'user') {
-      video.classList.add('mirrored');
-    } else {
-      video.classList.remove('mirrored');
-    }
-
+    video.classList.toggle('mirrored', facingMode === 'user');
     captureBtn.disabled = false;
     startBtn.disabled = true;
   } catch (err) {
@@ -109,14 +98,12 @@ function captureFrame() {
   const sx = (video.videoWidth - size) / 2;
   const sy = (video.videoHeight - size) / 2;
 
-  // Mirror the captured image only for front camera
   if (facingMode === 'user') {
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
   }
 
   ctx.drawImage(video, sx, sy, size, size, 0, 0, 800, 800);
-
   return canvas.toDataURL('image/jpeg', 0.92);
 }
 
@@ -139,13 +126,31 @@ async function uploadPhoto(dataUrl) {
   await db.from('photos').insert({ image_url: urlData.publicUrl });
 }
 
+/* ------------------------------------------------------------------
+   PRINT LAYOUT
+   Bond paper A4 landscape: 297mm x 210mm (11.69in x 8.27in)
+   Strip occupies ~1/4 of page width, positioned on the right.
+   Set STRIP_ALIGN to 'right', 'left', or 'center' below.
+   ------------------------------------------------------------------ */
+
+const STRIP_ALIGN = 'right'; // 'right' | 'left' | 'center'
+
 function buildPrintHTML(imgs) {
-  const rows = imgs.map((src, i) => `
+  const photoCells = imgs.map((src, i) => `
     <div class="photo-frame">
       <img src="${src}" class="photo" />
       <span class="photo-num">${String(i + 1).padStart(2, '0')}</span>
     </div>
   `).join('');
+
+  const today = new Date().toLocaleDateString(undefined, {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  const justify =
+    STRIP_ALIGN === 'right' ? 'flex-end' :
+    STRIP_ALIGN === 'left'  ? 'flex-start' :
+    'center';
 
   return `
     <!DOCTYPE html>
@@ -153,49 +158,64 @@ function buildPrintHTML(imgs) {
     <head>
       <title>Print</title>
       <style>
-        @page { size: 4in 6in; margin: 0; }
+        /* A4 landscape */
+        @page { size: A4 landscape; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         html, body {
-          width: 4in;
-          height: 6in;
+          width: 297mm;
+          height: 210mm;
           background: #ffffff;
           font-family: 'Segoe UI', system-ui, sans-serif;
           color: #1a4d2e;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          overflow: hidden;
         }
 
-        .card {
-          width: 4in;
-          height: 6in;
-          padding: 0.14in;
+        .page {
+          width: 297mm;
+          height: 210mm;
+          display: flex;
+          align-items: center;
+          justify-content: ${justify};
+          padding: 8mm;
+          background: #ffffff;
+        }
+
+        /* ---------- STRIP ---------- */
+        .strip {
+          width: 72mm;
+          height: 194mm;
+          padding: 5mm 5mm 4mm;
+          background:
+            radial-gradient(circle at 0% 0%, rgba(45,106,79,0.10) 0%, transparent 30%),
+            radial-gradient(circle at 100% 100%, rgba(45,106,79,0.10) 0%, transparent 30%),
+            #ffffff;
+          border-radius: 3mm;
+          position: relative;
           display: flex;
           flex-direction: column;
-          gap: 0.07in;
-          position: relative;
-          background:
-            radial-gradient(circle at 0% 0%, rgba(45,106,79,0.08) 0%, transparent 35%),
-            radial-gradient(circle at 100% 100%, rgba(45,106,79,0.08) 0%, transparent 35%),
-            #ffffff;
+          gap: 3mm;
+          box-shadow: 0 0 0 0.5px rgba(26,77,46,0.25);
         }
 
-        /* Outer ornamental border */
-        .card::before {
+        /* Double ornamental border */
+        .strip::before {
           content: "";
           position: absolute;
-          inset: 0.06in;
-          border: 1.5px solid #1a4d2e;
-          border-radius: 6px;
+          inset: 1.2mm;
+          border: 0.7mm solid #1a4d2e;
+          border-radius: 2.4mm;
           pointer-events: none;
         }
 
-        .card::after {
+        .strip::after {
           content: "";
           position: absolute;
-          inset: 0.085in;
-          border: 0.5px solid #2d6a4f;
-          border-radius: 5px;
+          inset: 2.2mm;
+          border: 0.25mm solid #2d6a4f;
+          border-radius: 2mm;
           pointer-events: none;
           opacity: 0.55;
         }
@@ -205,81 +225,83 @@ function buildPrintHTML(imgs) {
           z-index: 1;
           display: flex;
           flex-direction: column;
-          gap: 0.07in;
+          gap: 3mm;
           height: 100%;
-          padding: 0.04in 0.05in;
+          padding: 1.5mm 1mm 0.5mm;
         }
 
-        /* Header */
+        /* ---------- HEADER ---------- */
         .header {
           text-align: center;
-          padding: 6px 4px 7px;
-          border-bottom: 1px solid #2d6a4f;
+          padding: 2mm 0 2.5mm;
           position: relative;
+          border-bottom: 0.3mm solid #2d6a4f;
         }
 
         .header::before,
         .header::after {
           content: "";
           position: absolute;
-          bottom: -3px;
-          width: 6px;
-          height: 6px;
+          bottom: -1.1mm;
+          width: 1.8mm;
+          height: 1.8mm;
           background: #1a4d2e;
           transform: rotate(45deg);
         }
-        .header::before { left: 8px; }
-        .header::after { right: 8px; }
+        .header::before { left: 3mm; }
+        .header::after  { right: 3mm; }
 
         .eyebrow {
-          font-size: 7px;
-          letter-spacing: 3px;
+          font-size: 5.5pt;
+          letter-spacing: 1.2mm;
           color: #40916c;
           text-transform: uppercase;
           font-weight: 600;
-          margin-bottom: 2px;
+          margin-bottom: 1mm;
+          padding-left: 1.2mm;
         }
 
         .title {
-          font-size: 15px;
+          font-size: 12pt;
           font-weight: 800;
           color: #1a4d2e;
-          letter-spacing: 2px;
+          letter-spacing: 0.6mm;
           text-transform: uppercase;
-          line-height: 1.1;
+          line-height: 1.05;
+          padding-left: 0.6mm;
         }
 
         .divider {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 5px;
-          margin-top: 3px;
+          gap: 1.4mm;
+          margin-top: 1.2mm;
         }
 
         .divider .line {
-          width: 22px;
-          height: 1px;
+          width: 8mm;
+          height: 0.25mm;
           background: #2d6a4f;
         }
 
         .divider .dot {
-          width: 4px;
-          height: 4px;
+          width: 1.3mm;
+          height: 1.3mm;
           background: #1a4d2e;
           transform: rotate(45deg);
         }
 
-        /* Photo frames */
+        /* ---------- PHOTOS ---------- */
         .photo-frame {
           position: relative;
           flex: 1;
           min-height: 0;
-          border: 2.5px solid #1a4d2e;
-          border-radius: 4px;
-          padding: 3px;
+          border: 0.7mm solid #1a4d2e;
+          border-radius: 1.6mm;
+          padding: 0.7mm;
           background: #ffffff;
-          box-shadow: inset 0 0 0 1px #ffffff, 0 0 0 1px #2d6a4f;
+          box-shadow: inset 0 0 0 0.25mm #ffffff, 0 0 0 0.25mm #2d6a4f;
         }
 
         .photo {
@@ -287,96 +309,97 @@ function buildPrintHTML(imgs) {
           height: 100%;
           object-fit: cover;
           display: block;
-          border-radius: 2px;
+          border-radius: 0.9mm;
         }
 
         .photo-num {
           position: absolute;
-          bottom: -7px;
-          right: 6px;
+          bottom: -1.6mm;
+          right: 2.5mm;
           background: #1a4d2e;
           color: #ffffff;
-          font-size: 6px;
+          font-size: 4.5pt;
           font-weight: 700;
-          letter-spacing: 1px;
-          padding: 1.5px 5px;
-          border-radius: 8px;
-          border: 1px solid #ffffff;
+          letter-spacing: 0.5mm;
+          padding: 0.6mm 1.6mm 0.5mm;
+          border-radius: 1.8mm;
+          border: 0.25mm solid #ffffff;
           line-height: 1;
         }
 
-        /* Footer */
+        /* ---------- FOOTER ---------- */
         .footer {
           text-align: center;
-          padding-top: 4px;
-          border-top: 1px solid #2d6a4f;
+          padding-top: 2mm;
+          border-top: 0.3mm solid #2d6a4f;
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 0.8mm;
           align-items: center;
         }
 
+        .footer .ornament {
+          display: flex;
+          align-items: center;
+          gap: 1.2mm;
+        }
+
+        .footer .ornament::before,
+        .footer .ornament::after {
+          content: "";
+          width: 6mm;
+          height: 0.25mm;
+          background: #2d6a4f;
+        }
+
+        .footer .leaf {
+          width: 1.4mm;
+          height: 1.4mm;
+          border: 0.25mm solid #1a4d2e;
+          transform: rotate(45deg);
+        }
+
         .footer .message {
-          font-size: 7.5px;
-          letter-spacing: 1.5px;
+          font-size: 5.5pt;
+          letter-spacing: 0.5mm;
           color: #1a4d2e;
           text-transform: uppercase;
           font-weight: 700;
         }
 
         .footer .date {
-          font-size: 6.5px;
-          letter-spacing: 1px;
+          font-size: 5pt;
+          letter-spacing: 0.4mm;
           color: #40916c;
           text-transform: uppercase;
         }
 
-        .footer .leaves {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .footer .leaves::before,
-        .footer .leaves::after {
-          content: "";
-          width: 18px;
-          height: 1px;
-          background: #2d6a4f;
-        }
-
-        .footer .leaf {
-          width: 5px;
-          height: 5px;
-          border: 1px solid #1a4d2e;
-          transform: rotate(45deg);
-        }
-
         @media print {
-          html, body { width: 4in; height: 6in; }
-          .card { page-break-inside: avoid; }
+          html, body { width: 297mm; height: 210mm; }
         }
       </style>
     </head>
     <body>
-      <div class="card">
-        <div class="inner">
-          <div class="header">
-            <div class="eyebrow">With Gratitude</div>
-            <div class="title">Happy Teachers Day</div>
-            <div class="divider">
-              <span class="line"></span>
-              <span class="dot"></span>
-              <span class="line"></span>
+      <div class="page">
+        <div class="strip">
+          <div class="inner">
+            <div class="header">
+              <div class="eyebrow">With Gratitude</div>
+              <div class="title">Happy Teachers Day</div>
+              <div class="divider">
+                <span class="line"></span>
+                <span class="dot"></span>
+                <span class="line"></span>
+              </div>
             </div>
-          </div>
 
-          ${rows}
+            ${photoCells}
 
-          <div class="footer">
-            <div class="leaves"><span class="leaf"></span></div>
-            <div class="message">Thank You For Everything</div>
-            <div class="date">${new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            <div class="footer">
+              <div class="ornament"><span class="leaf"></span></div>
+              <div class="message">Thank You For Everything</div>
+              <div class="date">${today}</div>
+            </div>
           </div>
         </div>
       </div>
