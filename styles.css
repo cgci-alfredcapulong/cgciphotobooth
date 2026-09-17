@@ -52,6 +52,32 @@ h1 {
   display: block;
 }
 
+#video.mirrored {
+  transform: scaleX(-1);
+}
+
+.flip-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1a4d2e;
+  border: 2px solid #1a4d2e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.2s;
+  z-index: 5;
+}
+
+.flip-btn:hover { background: #ffffff; }
+.flip-btn:active { transform: scale(0.92) rotate(180deg); }
+.flip-btn svg { width: 22px; height: 22px; }
+
 .countdown {
   position: absolute;
   inset: 0;
@@ -107,9 +133,7 @@ h1 {
   border: 2px solid #ffffff;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #f0f0f0;
-}
+.btn-primary:hover:not(:disabled) { background: #f0f0f0; }
 
 .btn-capture {
   background: #2d6a4f;
@@ -117,9 +141,7 @@ h1 {
   border: 2px solid #ffffff;
 }
 
-.btn-capture:hover:not(:disabled) {
-  background: #40916c;
-}
+.btn-capture:hover:not(:disabled) { background: #40916c; }
 
 .btn-print {
   background: #ffffff;
@@ -127,9 +149,7 @@ h1 {
   border: 2px solid #ffffff;
 }
 
-.btn-print:hover:not(:disabled) {
-  background: #f0f0f0;
-}
+.btn-print:hover:not(:disabled) { background: #f0f0f0; }
 
 .btn-secondary {
   background: transparent;
@@ -137,9 +157,7 @@ h1 {
   border: 2px solid #ffffff;
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-}
+.btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
 
 .results {
   display: grid;

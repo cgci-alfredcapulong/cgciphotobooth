@@ -6,6 +6,7 @@ const startBtn = document.getElementById('startBtn');
 const captureBtn = document.getElementById('captureBtn');
 const printBtn = document.getElementById('printBtn');
 const retakeBtn = document.getElementById('retakeBtn');
+const flipBtn = document.getElementById('flipBtn');
 const results = document.getElementById('results');
 const actions = document.getElementById('actions');
 const countdown = document.getElementById('countdown');
@@ -14,20 +15,47 @@ const flash = document.getElementById('flash');
 const MAX_PHOTOS = 3;
 let stream = null;
 let photos = [];
+let facingMode = 'user'; // 'user' = front, 'environment' = back
 
 startBtn.addEventListener('click', async () => {
+  await startCamera();
+});
+
+flipBtn.addEventListener('click', async () => {
+  if (!stream) return;
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  await startCamera();
+});
+
+async function startCamera() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+  }
+
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1080 } },
+      video: {
+        facingMode: { ideal: facingMode },
+        width: { ideal: 1080 },
+        height: { ideal: 1080 }
+      },
       audio: false
     });
     video.srcObject = stream;
+
+    // Mirror only the front camera preview
+    if (facingMode === 'user') {
+      video.classList.add('mirrored');
+    } else {
+      video.classList.remove('mirrored');
+    }
+
     captureBtn.disabled = false;
     startBtn.disabled = true;
   } catch (err) {
     alert('Camera access denied: ' + err.message);
   }
-});
+}
 
 captureBtn.addEventListener('click', async () => {
   if (photos.length >= MAX_PHOTOS) return;
@@ -80,6 +108,13 @@ function captureFrame() {
 
   const sx = (video.videoWidth - size) / 2;
   const sy = (video.videoHeight - size) / 2;
+
+  // Mirror the captured image only for front camera
+  if (facingMode === 'user') {
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+  }
+
   ctx.drawImage(video, sx, sy, size, size, 0, 0, 800, 800);
 
   return canvas.toDataURL('image/jpeg', 0.92);
@@ -105,7 +140,13 @@ async function uploadPhoto(dataUrl) {
 }
 
 function buildPrintHTML(imgs) {
-  const rows = imgs.map(src => `<img src="${src}" class="row" />`).join('');
+  const rows = imgs.map((src, i) => `
+    <div class="photo-frame">
+      <img src="${src}" class="photo" />
+      <span class="photo-num">${String(i + 1).padStart(2, '0')}</span>
+    </div>
+  `).join('');
+
   return `
     <!DOCTYPE html>
     <html>
@@ -121,74 +162,227 @@ function buildPrintHTML(imgs) {
           background: #ffffff;
           font-family: 'Segoe UI', system-ui, sans-serif;
           color: #1a4d2e;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
-        body {
+        .card {
+          width: 4in;
+          height: 6in;
+          padding: 0.14in;
           display: flex;
           flex-direction: column;
-          padding: 0.15in;
-          gap: 0.08in;
+          gap: 0.07in;
+          position: relative;
+          background:
+            radial-gradient(circle at 0% 0%, rgba(45,106,79,0.08) 0%, transparent 35%),
+            radial-gradient(circle at 100% 100%, rgba(45,106,79,0.08) 0%, transparent 35%),
+            #ffffff;
         }
 
+        /* Outer ornamental border */
+        .card::before {
+          content: "";
+          position: absolute;
+          inset: 0.06in;
+          border: 1.5px solid #1a4d2e;
+          border-radius: 6px;
+          pointer-events: none;
+        }
+
+        .card::after {
+          content: "";
+          position: absolute;
+          inset: 0.085in;
+          border: 0.5px solid #2d6a4f;
+          border-radius: 5px;
+          pointer-events: none;
+          opacity: 0.55;
+        }
+
+        .inner {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 0.07in;
+          height: 100%;
+          padding: 0.04in 0.05in;
+        }
+
+        /* Header */
         .header {
-          background: #ffffff;
-          border: 2px solid #1a4d2e;
-          border-bottom: 4px solid #2d6a4f;
-          border-radius: 8px;
           text-align: center;
-          padding: 6px 8px;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: #1a4d2e;
+          padding: 6px 4px 7px;
+          border-bottom: 1px solid #2d6a4f;
+          position: relative;
         }
 
-        .header .sub {
-          font-size: 9px;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-          text-transform: none;
+        .header::before,
+        .header::after {
+          content: "";
+          position: absolute;
+          bottom: -3px;
+          width: 6px;
+          height: 6px;
+          background: #1a4d2e;
+          transform: rotate(45deg);
+        }
+        .header::before { left: 8px; }
+        .header::after { right: 8px; }
+
+        .eyebrow {
+          font-size: 7px;
+          letter-spacing: 3px;
           color: #40916c;
-          margin-top: 2px;
+          text-transform: uppercase;
+          font-weight: 600;
+          margin-bottom: 2px;
         }
 
-        .row {
+        .title {
+          font-size: 15px;
+          font-weight: 800;
+          color: #1a4d2e;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          line-height: 1.1;
+        }
+
+        .divider {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          margin-top: 3px;
+        }
+
+        .divider .line {
+          width: 22px;
+          height: 1px;
+          background: #2d6a4f;
+        }
+
+        .divider .dot {
+          width: 4px;
+          height: 4px;
+          background: #1a4d2e;
+          transform: rotate(45deg);
+        }
+
+        /* Photo frames */
+        .photo-frame {
+          position: relative;
+          flex: 1;
+          min-height: 0;
+          border: 2.5px solid #1a4d2e;
+          border-radius: 4px;
+          padding: 3px;
+          background: #ffffff;
+          box-shadow: inset 0 0 0 1px #ffffff, 0 0 0 1px #2d6a4f;
+        }
+
+        .photo {
           width: 100%;
-          aspect-ratio: 1 / 1;
+          height: 100%;
           object-fit: cover;
           display: block;
-          border: 3px solid #1a4d2e;
-          border-radius: 6px;
+          border-radius: 2px;
         }
 
+        .photo-num {
+          position: absolute;
+          bottom: -7px;
+          right: 6px;
+          background: #1a4d2e;
+          color: #ffffff;
+          font-size: 6px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          padding: 1.5px 5px;
+          border-radius: 8px;
+          border: 1px solid #ffffff;
+          line-height: 1;
+        }
+
+        /* Footer */
         .footer {
-          background: #ffffff;
-          border-top: 2px solid #2d6a4f;
           text-align: center;
-          font-size: 8px;
-          letter-spacing: 0.5px;
-          padding: 4px 0 2px;
-          color: #2d6a4f;
+          padding-top: 4px;
+          border-top: 1px solid #2d6a4f;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          align-items: center;
+        }
+
+        .footer .message {
+          font-size: 7.5px;
+          letter-spacing: 1.5px;
+          color: #1a4d2e;
           text-transform: uppercase;
+          font-weight: 700;
+        }
+
+        .footer .date {
+          font-size: 6.5px;
+          letter-spacing: 1px;
+          color: #40916c;
+          text-transform: uppercase;
+        }
+
+        .footer .leaves {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .footer .leaves::before,
+        .footer .leaves::after {
+          content: "";
+          width: 18px;
+          height: 1px;
+          background: #2d6a4f;
+        }
+
+        .footer .leaf {
+          width: 5px;
+          height: 5px;
+          border: 1px solid #1a4d2e;
+          transform: rotate(45deg);
         }
 
         @media print {
           html, body { width: 4in; height: 6in; }
-          .row { break-inside: avoid; }
+          .card { page-break-inside: avoid; }
         }
       </style>
     </head>
     <body>
-      <div class="header">
-        Happy Teachers Day
-        <div class="sub">Thank you for everything</div>
+      <div class="card">
+        <div class="inner">
+          <div class="header">
+            <div class="eyebrow">With Gratitude</div>
+            <div class="title">Happy Teachers Day</div>
+            <div class="divider">
+              <span class="line"></span>
+              <span class="dot"></span>
+              <span class="line"></span>
+            </div>
+          </div>
+
+          ${rows}
+
+          <div class="footer">
+            <div class="leaves"><span class="leaf"></span></div>
+            <div class="message">Thank You For Everything</div>
+            <div class="date">${new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          </div>
+        </div>
       </div>
-      ${rows}
-      <div class="footer">${new Date().toLocaleDateString()}</div>
       <script>
         window.onload = () => {
-          setTimeout(() => { window.print(); }, 400);
+          setTimeout(() => { window.print(); }, 500);
         };
       <\/script>
     </body>
