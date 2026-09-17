@@ -397,7 +397,7 @@ function buildPrintHTML(imgs) {
 
             <div class="footer">
               <div class="ornament"><span class="leaf"></span></div>
-              <div class="message">Thank You For Everything</div>
+              <div class="message">Teacher, Ikaw naman.</div>
               <div class="date">${today}</div>
             </div>
           </div>
