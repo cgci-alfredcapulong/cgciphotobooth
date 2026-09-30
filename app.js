@@ -127,10 +127,8 @@ async function uploadPhoto(dataUrl) {
 }
 
 /* ------------------------------------------------------------------
-   PRINT LAYOUT
-   Bond paper A4 landscape: 297mm x 210mm (11.69in x 8.27in)
-   Strip occupies ~1/4 of page width, positioned on the right.
-   Set STRIP_ALIGN to 'right', 'left', or 'center' below.
+   PRINT LAYOUT - 90's THEME
+   A4 landscape (297mm x 210mm). Strip ~72mm wide, aligned right.
    ------------------------------------------------------------------ */
 
 const STRIP_ALIGN = 'right'; // 'right' | 'left' | 'center'
@@ -158,7 +156,6 @@ function buildPrintHTML(imgs) {
     <head>
       <title>Print</title>
       <style>
-        /* A4 landscape */
         @page { size: A4 landscape; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -166,7 +163,7 @@ function buildPrintHTML(imgs) {
           width: 297mm;
           height: 210mm;
           background: #ffffff;
-          font-family: 'Segoe UI', system-ui, sans-serif;
+          font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
           color: #1a4d2e;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
@@ -187,26 +184,20 @@ function buildPrintHTML(imgs) {
         .strip {
           width: 72mm;
           height: 194mm;
-          padding: 5mm 5mm 4mm;
-          background:
-            radial-gradient(circle at 0% 0%, rgba(45,106,79,0.10) 0%, transparent 30%),
-            radial-gradient(circle at 100% 100%, rgba(45,106,79,0.10) 0%, transparent 30%),
-            #ffffff;
-          border-radius: 3mm;
+          padding: 4mm;
+          background: #ffffff;
           position: relative;
           display: flex;
           flex-direction: column;
-          gap: 3mm;
-          box-shadow: 0 0 0 0.5px rgba(26,77,46,0.25);
+          gap: 2.5mm;
         }
 
-        /* Double ornamental border */
+        /* Chunky 90's double border */
         .strip::before {
           content: "";
           position: absolute;
-          inset: 1.2mm;
-          border: 0.7mm solid #1a4d2e;
-          border-radius: 2.4mm;
+          inset: 0;
+          border: 1.4mm solid #1a4d2e;
           pointer-events: none;
         }
 
@@ -214,82 +205,96 @@ function buildPrintHTML(imgs) {
           content: "";
           position: absolute;
           inset: 2.2mm;
-          border: 0.25mm solid #2d6a4f;
-          border-radius: 2mm;
+          border: 0.35mm solid #2d6a4f;
           pointer-events: none;
-          opacity: 0.55;
+        }
+
+        /* Diagonal accent blocks in corners - very 90's */
+        .corner-accent {
+          position: absolute;
+          width: 8mm;
+          height: 8mm;
+          background: #1a4d2e;
+          z-index: 2;
+        }
+        .corner-accent.tl {
+          top: 0; left: 0;
+          clip-path: polygon(0 0, 100% 0, 0 100%);
+        }
+        .corner-accent.tr {
+          top: 0; right: 0;
+          clip-path: polygon(0 0, 100% 0, 100% 100%);
+        }
+        .corner-accent.bl {
+          bottom: 0; left: 0;
+          clip-path: polygon(0 0, 0 100%, 100% 100%);
+        }
+        .corner-accent.br {
+          bottom: 0; right: 0;
+          clip-path: polygon(100% 0, 100% 100%, 0 100%);
         }
 
         .inner {
           position: relative;
-          z-index: 1;
+          z-index: 3;
           display: flex;
           flex-direction: column;
-          gap: 3mm;
+          gap: 2.5mm;
           height: 100%;
-          padding: 1.5mm 1mm 0.5mm;
+          padding: 3mm 2mm 2mm;
         }
 
         /* ---------- HEADER ---------- */
         .header {
           text-align: center;
-          padding: 2mm 0 2.5mm;
+          padding: 2.5mm 0 2.5mm;
+          background: #1a4d2e;
+          color: #ffffff;
           position: relative;
-          border-bottom: 0.3mm solid #2d6a4f;
+          border-radius: 0;
+          box-shadow: 1.6mm 1.6mm 0 #2d6a4f;
         }
 
-        .header::before,
+        /* Zig-zag underline strip - retro */
         .header::after {
           content: "";
           position: absolute;
-          bottom: -1.1mm;
-          width: 1.8mm;
-          height: 1.8mm;
-          background: #1a4d2e;
-          transform: rotate(45deg);
+          left: 0; right: 0; bottom: -1.6mm;
+          height: 1.6mm;
+          background:
+            linear-gradient(135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm,
+            linear-gradient(-135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm;
+          background-repeat: repeat-x;
         }
-        .header::before { left: 3mm; }
-        .header::after  { right: 3mm; }
 
         .eyebrow {
           font-size: 5.5pt;
-          letter-spacing: 1.2mm;
-          color: #40916c;
+          letter-spacing: 1mm;
+          color: #d4e8db;
           text-transform: uppercase;
-          font-weight: 600;
+          font-weight: 700;
           margin-bottom: 1mm;
-          padding-left: 1.2mm;
+          padding-left: 1mm;
         }
 
         .title {
-          font-size: 12pt;
-          font-weight: 800;
-          color: #1a4d2e;
-          letter-spacing: 0.6mm;
+          font-size: 13pt;
+          font-weight: 900;
+          color: #ffffff;
+          letter-spacing: 0.4mm;
           text-transform: uppercase;
           line-height: 1.05;
-          padding-left: 0.6mm;
+          font-family: 'Trebuchet MS', sans-serif;
+          text-shadow: 0.5mm 0.5mm 0 #2d6a4f;
         }
 
-        .divider {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 1.4mm;
+        .sub-title {
+          font-size: 5pt;
+          letter-spacing: 0.6mm;
+          color: #d4e8db;
+          text-transform: uppercase;
           margin-top: 1.2mm;
-        }
-
-        .divider .line {
-          width: 8mm;
-          height: 0.25mm;
-          background: #2d6a4f;
-        }
-
-        .divider .dot {
-          width: 1.3mm;
-          height: 1.3mm;
-          background: #1a4d2e;
-          transform: rotate(45deg);
+          font-weight: 600;
         }
 
         /* ---------- PHOTOS ---------- */
@@ -297,11 +302,10 @@ function buildPrintHTML(imgs) {
           position: relative;
           flex: 1;
           min-height: 0;
-          border: 0.7mm solid #1a4d2e;
-          border-radius: 1.6mm;
-          padding: 0.7mm;
+          border: 1mm solid #1a4d2e;
+          padding: 0.8mm;
           background: #ffffff;
-          box-shadow: inset 0 0 0 0.25mm #ffffff, 0 0 0 0.25mm #2d6a4f;
+          box-shadow: 1.4mm 1.4mm 0 #d4e8db;
         }
 
         .photo {
@@ -309,69 +313,71 @@ function buildPrintHTML(imgs) {
           height: 100%;
           object-fit: cover;
           display: block;
-          border-radius: 0.9mm;
         }
 
         .photo-num {
           position: absolute;
-          bottom: -1.6mm;
-          right: 2.5mm;
+          top: -1.8mm;
+          left: 2.5mm;
           background: #1a4d2e;
           color: #ffffff;
-          font-size: 4.5pt;
-          font-weight: 700;
+          font-size: 5pt;
+          font-weight: 900;
           letter-spacing: 0.5mm;
-          padding: 0.6mm 1.6mm 0.5mm;
-          border-radius: 1.8mm;
-          border: 0.25mm solid #ffffff;
+          padding: 0.7mm 1.8mm 0.6mm;
+          border: 0.3mm solid #ffffff;
           line-height: 1;
+          font-family: 'Courier New', monospace;
         }
 
         /* ---------- FOOTER ---------- */
         .footer {
           text-align: center;
-          padding-top: 2mm;
-          border-top: 0.3mm solid #2d6a4f;
-          display: flex;
-          flex-direction: column;
-          gap: 0.8mm;
-          align-items: center;
+          padding: 2.5mm 0 1.5mm;
+          background: #1a4d2e;
+          color: #ffffff;
+          position: relative;
         }
 
-        .footer .ornament {
-          display: flex;
-          align-items: center;
-          gap: 1.2mm;
-        }
-
-        .footer .ornament::before,
-        .footer .ornament::after {
+        /* Zig-zag top border */
+        .footer::before {
           content: "";
-          width: 6mm;
-          height: 0.25mm;
-          background: #2d6a4f;
+          position: absolute;
+          left: 0; right: 0; top: -1.6mm;
+          height: 1.6mm;
+          background:
+            linear-gradient(135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm,
+            linear-gradient(-135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm;
+          background-repeat: repeat-x;
         }
 
-        .footer .leaf {
-          width: 1.4mm;
-          height: 1.4mm;
-          border: 0.25mm solid #1a4d2e;
-          transform: rotate(45deg);
+        .footer .stamp {
+          display: inline-block;
+          font-family: 'Courier New', monospace;
+          font-size: 5pt;
+          letter-spacing: 0.6mm;
+          color: #ffffff;
+          border: 0.3mm dashed #d4e8db;
+          padding: 0.6mm 2mm;
+          margin-bottom: 1.2mm;
+          text-transform: uppercase;
         }
 
         .footer .message {
-          font-size: 5.5pt;
-          letter-spacing: 0.5mm;
-          color: #1a4d2e;
+          font-size: 6pt;
+          letter-spacing: 0.6mm;
+          color: #ffffff;
           text-transform: uppercase;
-          font-weight: 700;
+          font-weight: 900;
+          margin-bottom: 0.8mm;
         }
 
         .footer .date {
-          font-size: 5pt;
-          letter-spacing: 0.4mm;
-          color: #40916c;
+          font-size: 4.5pt;
+          letter-spacing: 0.5mm;
+          color: #d4e8db;
           text-transform: uppercase;
+          font-family: 'Courier New', monospace;
         }
 
         @media print {
@@ -382,22 +388,23 @@ function buildPrintHTML(imgs) {
     <body>
       <div class="page">
         <div class="strip">
+          <div class="corner-accent tl"></div>
+          <div class="corner-accent tr"></div>
+          <div class="corner-accent bl"></div>
+          <div class="corner-accent br"></div>
+
           <div class="inner">
             <div class="header">
               <div class="eyebrow">With Gratitude</div>
-              <div class="title">Happy Teachers Day</div>
-              <div class="divider">
-                <span class="line"></span>
-                <span class="dot"></span>
-                <span class="line"></span>
-              </div>
+              <div class="title">Happy<br/>Teachers Day</div>
+              <div class="sub-title">Thank You For Everything</div>
             </div>
 
             ${photoCells}
 
             <div class="footer">
-              <div class="ornament"><span class="leaf"></span></div>
-              <div class="message">Teacher, Ikaw naman.</div>
+              <div class="stamp">No. ${new Date().getFullYear()}</div>
+              <div class="message">Class of ${new Date().getFullYear()}</div>
               <div class="date">${today}</div>
             </div>
           </div>
