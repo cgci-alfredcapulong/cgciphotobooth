@@ -285,7 +285,7 @@ async function generateFunStrip(imgs) {
 
   // Header text
   drawRetroHeader(ctx, hx, hy, hw, hh, {
-    eyebrow: "TEACHERS DAY '95",
+    eyebrow: "TEACHERS DAY",
     title: 'HAPPY TEACHERS DAY',
     subtitle: 'SMILE, YOU LOOK GREAT TODAY'
   });
