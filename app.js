@@ -18,6 +18,7 @@ const deptInput = document.getElementById('deptInput');
 const deptList = document.getElementById('deptList');
 const headerTitle = document.getElementById('headerTitle');
 const headerSubtitle = document.getElementById('headerSubtitle');
+const cameraWrapper = document.querySelector('.camera-wrapper');
 
 /* ---------- STATE ---------- */
 let mode = 'fun';
@@ -32,6 +33,8 @@ const THEME = {
   greenPale: '#e8f3ec',
   white: '#ffffff'
 };
+
+const TAGLINE = 'Teacher, Ikaw naman.';
 
 if (typeof DEPARTMENTS !== 'undefined') {
   DEPARTMENTS.forEach(d => {
@@ -59,12 +62,17 @@ modeSwitcher.addEventListener('click', (e) => {
 
   deptPanel.style.display = mode === 'department' ? 'block' : 'none';
 
+  // Landscape preview in department mode
+  if (cameraWrapper) {
+    cameraWrapper.classList.toggle('landscape', mode === 'department');
+  }
+
   if (mode === 'department') {
     headerTitle.textContent = 'Department Photo';
     headerSubtitle.textContent = 'One for the whole team';
   } else {
     headerTitle.textContent = 'Teachers Day Photobooth';
-    headerSubtitle.textContent = 'Est. 1995 / Smile, you look great today';
+    headerSubtitle.textContent = 'Smile, you look great today';
   }
 });
 
@@ -84,7 +92,7 @@ async function startCamera() {
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: facingMode },
-        width: { ideal: 1080 },
+        width: { ideal: 1920 },
         height: { ideal: 1080 }
       },
       audio: false
@@ -137,22 +145,50 @@ retakeBtn.addEventListener('click', () => {
   captureBtn.disabled = false;
 });
 
+/**
+ * Capture the current video frame.
+ * - Fun mode: square 1:1 (1200 x 1200)
+ * - Department mode: landscape 4:3 (1600 x 1200)
+ */
 function captureFrame() {
+  const targetW = mode === 'department' ? 1600 : 1200;
+  const targetH = mode === 'department' ? 1200 : 1200;
+
   const canvas = document.createElement('canvas');
-  const size = Math.min(video.videoWidth, video.videoHeight);
-  canvas.width = 1200;
-  canvas.height = 1200;
+  canvas.width = targetW;
+  canvas.height = targetH;
   const ctx = canvas.getContext('2d');
 
-  const sx = (video.videoWidth - size) / 2;
-  const sy = (video.videoHeight - size) / 2;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  const targetRatio = targetW / targetH;
+  const videoRatio = vw / vh;
+
+  let sx, sy, sw, sh;
+
+  if (videoRatio > targetRatio) {
+    // Video wider than target: crop sides
+    sh = vh;
+    sw = vh * targetRatio;
+    sx = (vw - sw) / 2;
+    sy = 0;
+  } else {
+    // Video taller than target: crop top/bottom
+    sw = vw;
+    sh = vw / targetRatio;
+    sx = 0;
+    sy = (vh - sh) / 2;
+  }
 
   if (facingMode === 'user') {
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
   }
 
-  ctx.drawImage(video, sx, sy, size, size, 0, 0, 1200, 1200);
+  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
   return canvas.toDataURL('image/jpeg', 0.95);
 }
 
@@ -215,20 +251,16 @@ function triggerDownload(dataUrl, mode) {
 }
 
 /* ================================================================
-   IMAGE GENERATION - 90's THEME
+   IMAGE GENERATION
    ================================================================ */
 
-const TAGLINE = 'Teacher, Ikaw naman.';
-
-/**
- * FUN SHOTS - vertical 3-photo strip
- */
+/* ---------------- FUN STRIP (vertical, square photos) ---------- */
 async function generateFunStrip(imgs) {
   const W = 1200;
   const HEADER_H = 360;
   const FOOTER_H = 260;
-  const PAD = 60;
-  const GAP = 48;
+  const PAD = 50;
+  const GAP = 40;
   const PHOTO_SIZE = W - PAD * 2;
   const H = HEADER_H + PAD / 2 + (PHOTO_SIZE * 3) + (GAP * 2) + FOOTER_H + PAD;
 
@@ -241,31 +273,28 @@ async function generateFunStrip(imgs) {
   ctx.fillStyle = THEME.white;
   ctx.fillRect(0, 0, W, H);
 
-  // Pale green inner field (retro paper feel)
+  // Pale green inner field
   ctx.fillStyle = THEME.greenPale;
   ctx.fillRect(20, 20, W - 40, H - 40);
 
   // Chunky outer border
   drawChunkyBorder(ctx, 0, 0, W, H, 22, THEME.green, 5);
 
-  // Memphis decorations in the white margin
+  // Memphis decorations
   drawMemphisBackdrop(ctx, 0, 0, W, H);
 
-  // Corner triangles (chunky, two-tone)
+  // Corner triangles
   drawCornerAccents(ctx, 0, 0, W, H, 110, THEME.green, THEME.greenMid);
 
   /* ---------- HEADER ---------- */
   const hx = 50, hy = 50, hw = W - 100, hh = HEADER_H - 70;
 
-  // Header hard shadow
   ctx.fillStyle = THEME.greenMid;
   ctx.fillRect(hx + 16, hy + 16, hw, hh);
 
-  // Header block
   ctx.fillStyle = THEME.green;
   ctx.fillRect(hx, hy, hw, hh);
 
-  // Diagonal stripe band behind title
   ctx.save();
   ctx.beginPath();
   ctx.rect(hx, hy, hw, hh);
@@ -280,17 +309,14 @@ async function generateFunStrip(imgs) {
   }
   ctx.restore();
 
-  // Memphis dots inside header
   drawMemphisDots(ctx, hx, hy, hw, hh);
 
-  // Header text
   drawRetroHeader(ctx, hx, hy, hw, hh, {
-    eyebrow: "TEACHERS DAY '95",
+    eyebrow: 'TEACHERS DAY',
     title: 'HAPPY TEACHERS DAY',
     subtitle: 'SMILE, YOU LOOK GREAT TODAY'
   });
 
-  // Zig-zag under header (chunky)
   drawZigZag(ctx, hx, hy + hh, hw, 22, THEME.green, 26);
 
   /* ---------- PHOTOS ---------- */
@@ -302,39 +328,36 @@ async function generateFunStrip(imgs) {
 
     // Sticker shadow
     ctx.fillStyle = THEME.greenLight;
-    ctx.fillRect(PAD + 16, y + 16, PHOTO_SIZE, PHOTO_SIZE);
+    ctx.fillRect(PAD + 12, y + 12, PHOTO_SIZE, PHOTO_SIZE);
 
     // Frame outer
     ctx.fillStyle = THEME.green;
-    ctx.fillRect(PAD - 10, y - 10, PHOTO_SIZE + 20, PHOTO_SIZE + 20);
+    ctx.fillRect(PAD - 8, y - 8, PHOTO_SIZE + 16, PHOTO_SIZE + 16);
 
     // Frame inner (white gutter)
     ctx.fillStyle = THEME.white;
-    ctx.fillRect(PAD - 4, y - 4, PHOTO_SIZE + 8, PHOTO_SIZE + 8);
+    ctx.fillRect(PAD - 3, y - 3, PHOTO_SIZE + 6, PHOTO_SIZE + 6);
 
     // Photo
     ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
     // Thin inner green line
     ctx.strokeStyle = THEME.green;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.strokeRect(PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
     // Number tag
-    drawNumberTag(ctx, PAD + 10, y + 10, String(i + 1).padStart(2, '0'));
+    drawNumberTag(ctx, PAD + 12, y + 12, String(i + 1).padStart(2, '0'));
   }
 
   /* ---------- FOOTER ---------- */
   const fy = H - FOOTER_H - 10;
 
-  // Zig-zag above footer
   drawZigZag(ctx, 50, fy - 22, W - 100, 22, THEME.green, 26);
 
-  // Footer block shadow
   ctx.fillStyle = THEME.greenMid;
   ctx.fillRect(66, fy + 16, W - 132, FOOTER_H - 60);
 
-  // Footer block
   ctx.fillStyle = THEME.green;
   ctx.fillRect(50, fy, W - 100, FOOTER_H - 60);
 
@@ -343,56 +366,87 @@ async function generateFunStrip(imgs) {
   return canvas.toDataURL('image/png');
 }
 
-/**
- * DEPARTMENT - single landscape photo
- */
+/* ---------------- DEPARTMENT (framed, landscape) --------------- */
 async function generateDepartmentImage(imgSrc, departmentName) {
   const W = 1800;
   const H = 1350;
-  const PAD = 40;              // was 70 — closer to edges
-  const HEADER_H = 280;        // was 300 — slightly shorter
-  const FOOTER_H = 200;        // was 260 — much shorter
-  const FRAME_OUTER = 8;       // was 14
-  const FRAME_INNER = 3;       // was 6
+
+  // Decorative frame around the whole canvas
+  const FRAME = 26;           // dark green outer frame thickness
+  const FRAME_INNER = 4;      // thin green inner line
+  const MAT = 20;             // white mat thickness between frame and content
+  const CONTENT_PAD = 40;     // padding inside the mat
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // White base
-  ctx.fillStyle = THEME.white;
+  /* ---------- BACKGROUND ---------- */
+  ctx.fillStyle = THEME.greenPale;
   ctx.fillRect(0, 0, W, H);
 
-  // Pale inner field
-  ctx.fillStyle = THEME.greenPale;
-  ctx.fillRect(24, 24, W - 48, H - 48);
+  /* ---------- DECORATIVE FRAME ---------- */
+  // Outer dark green frame
+  drawChunkyBorder(ctx, 0, 0, W, H, FRAME, THEME.green, 0);
 
-  // Chunky outer border (keep it — this is the canvas edge, not the photo)
-  drawChunkyBorder(ctx, 0, 0, W, H, 26, THEME.green, 6);
+  // Thin inner green line
+  ctx.strokeStyle = THEME.greenMid;
+  ctx.lineWidth = FRAME_INNER;
+  const lineInset = FRAME + 6;
+  ctx.strokeRect(lineInset, lineInset, W - lineInset * 2, H - lineInset * 2);
 
-  // Memphis decorations
-  drawMemphisBackdrop(ctx, 0, 0, W, H);
+  // White mat
+  ctx.fillStyle = THEME.white;
+  const matInset = FRAME + 12;
+  ctx.fillRect(
+    matInset,
+    matInset,
+    W - matInset * 2,
+    H - matInset * 2
+  );
 
-  // Corner triangles
-  drawCornerAccents(ctx, 0, 0, W, H, 150, THEME.green, THEME.greenMid);
+  // Small corner triangles inside the mat
+  drawCornerAccents(
+    ctx,
+    matInset,
+    matInset,
+    W - matInset * 2,
+    H - matInset * 2,
+    70,
+    THEME.green,
+    THEME.greenMid
+  );
 
-  /* ---------- HEADER ---------- */
-  const hx = 60, hy = 60, hw = W - 120, hh = HEADER_H - 80;
+  /* ---------- CONTENT BOUNDS ---------- */
+  const contentX = matInset + CONTENT_PAD;
+  const contentY = matInset + CONTENT_PAD;
+  const contentW = W - (matInset + CONTENT_PAD) * 2;
+  const contentH = H - (matInset + CONTENT_PAD) * 2;
 
+  /* ---------- HEADER (compact, inside mat) ---------- */
+  const HEADER_H = 180;
+  const hx = contentX;
+  const hy = contentY;
+  const hw = contentW;
+  const hh = HEADER_H;
+
+  // Header shadow
   ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(hx + 18, hy + 18, hw, hh);
+  ctx.fillRect(hx + 10, hy + 10, hw, hh);
 
+  // Header block
   ctx.fillStyle = THEME.green;
   ctx.fillRect(hx, hy, hw, hh);
 
+  // Diagonal stripes behind title
   ctx.save();
   ctx.beginPath();
   ctx.rect(hx, hy, hw, hh);
   ctx.clip();
   ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 8;
-  for (let i = -hh; i < hw + hh; i += 32) {
+  ctx.lineWidth = 6;
+  for (let i = -hh; i < hw + hh; i += 26) {
     ctx.beginPath();
     ctx.moveTo(hx + i, hy);
     ctx.lineTo(hx + i + hh, hy + hh);
@@ -404,65 +458,59 @@ async function generateDepartmentImage(imgSrc, departmentName) {
 
   const dept = (departmentName && departmentName.trim()) || 'Department';
   drawRetroHeader(ctx, hx, hy, hw, hh, {
-    eyebrow: "TEACHERS DAY",
+    eyebrow: 'TEACHERS DAY',
     title: dept.toUpperCase(),
     subtitle: 'ONE TEAM. ONE FAMILY.'
   });
 
-  drawZigZag(ctx, hx, hy + hh, hw, 24, THEME.green, 34);
+  drawZigZag(ctx, hx, hy + hh, hw, 16, THEME.green, 40);
 
-  /* ---------- PHOTO (bigger, thinner frame) ---------- */
-  const photoY = hy + hh + 55;     // was +70 — closer to header
-  const photoH = H - photoY - FOOTER_H - 40;
-  const photoX = PAD;
-  const photoW = W - PAD * 2;
+  /* ---------- FOOTER (inside mat) ---------- */
+  const FOOTER_H = 130;
+  const fy = contentY + contentH - FOOTER_H;
 
-  // Offset shadow (thin)
-  ctx.fillStyle = THEME.greenLight;
-  ctx.fillRect(photoX + 12, photoY + 12, photoW, photoH);
+  // Zig-zag above footer
+  drawZigZag(ctx, hx, fy - 16, hw, 16, THEME.green, 40);
 
-  // Outer frame (thin green)
+  // Footer shadow
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(hx + 10, fy + 10, hw, FOOTER_H - 10);
+
+  // Footer block
   ctx.fillStyle = THEME.green;
-  ctx.fillRect(
-    photoX - FRAME_OUTER,
-    photoY - FRAME_OUTER,
-    photoW + FRAME_OUTER * 2,
-    photoH + FRAME_OUTER * 2
-  );
+  ctx.fillRect(hx, fy, hw, FOOTER_H - 10);
 
-  // Inner white gutter (thin)
+  drawRetroFooter(ctx, hx, fy, hw, FOOTER_H - 10);
+
+  /* ---------- PHOTO (landscape, fills the middle) ---------- */
+  const photoY = hy + hh + 36;
+  const photoH = fy - photoY - 36;
+  const photoX = contentX;
+  const photoW = contentW;
+
+  // Sticker shadow
+  ctx.fillStyle = THEME.greenLight;
+  ctx.fillRect(photoX + 10, photoY + 10, photoW, photoH);
+
+  // Thin dark green outer frame
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(photoX - 8, photoY - 8, photoW + 16, photoH + 16);
+
+  // Thin white inner gutter
   ctx.fillStyle = THEME.white;
-  ctx.fillRect(
-    photoX - FRAME_INNER,
-    photoY - FRAME_INNER,
-    photoW + FRAME_INNER * 2,
-    photoH + FRAME_INNER * 2
-  );
+  ctx.fillRect(photoX - 3, photoY - 3, photoW + 6, photoH + 6);
 
-  // Photo
+  // Draw photo (cover-fit)
   const img = await loadImage(imgSrc);
   drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
 
-  // Thin inner outline
+  // Thin green outline on the photo
   ctx.strokeStyle = THEME.green;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.strokeRect(photoX, photoY, photoW, photoH);
 
-  // Corner "photo" sticker tag
-  drawStickerTag(ctx, photoX + 20, photoY + 20, `PHOTO 01`, -4);
-
-  /* ---------- FOOTER ---------- */
-  const fy = H - FOOTER_H;
-
-  drawZigZag(ctx, 60, fy - 24, W - 120, 24, THEME.green, 34);
-
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(78, fy + 18, W - 156, FOOTER_H - 60);
-
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(60, fy, W - 120, FOOTER_H - 60);
-
-  drawRetroFooter(ctx, 60, fy, W - 120, FOOTER_H - 60);
+  // Sticker tag
+  drawStickerTag(ctx, photoX + 22, photoY + 22, 'PHOTO 01', -4);
 
   return canvas.toDataURL('image/png');
 }
@@ -487,25 +535,24 @@ function drawChunkyBorder(ctx, x, y, w, h, thickness, color, innerThickness) {
 }
 
 function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
+  // top-left
   ctx.fillStyle = color;
-  // top-left big triangle
   ctx.beginPath();
   ctx.moveTo(x, y);
   ctx.lineTo(x + size, y);
   ctx.lineTo(x, y + size);
   ctx.closePath();
   ctx.fill();
-  // inner highlight
   ctx.fillStyle = accentColor;
   ctx.beginPath();
-  ctx.moveTo(x + 24, y + 24);
-  ctx.lineTo(x + size * 0.55, y + 24);
-  ctx.lineTo(x + 24, y + size * 0.55);
+  ctx.moveTo(x + 16, y + 16);
+  ctx.lineTo(x + size * 0.55, y + 16);
+  ctx.lineTo(x + 16, y + size * 0.55);
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = color;
   // top-right
+  ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x + w - size, y);
   ctx.lineTo(x + w, y);
@@ -514,14 +561,14 @@ function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
   ctx.fill();
   ctx.fillStyle = accentColor;
   ctx.beginPath();
-  ctx.moveTo(x + w - 24, y + 24);
-  ctx.lineTo(x + w - size * 0.55, y + 24);
-  ctx.lineTo(x + w - 24, y + size * 0.55);
+  ctx.moveTo(x + w - 16, y + 16);
+  ctx.lineTo(x + w - size * 0.55, y + 16);
+  ctx.lineTo(x + w - 16, y + size * 0.55);
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = color;
   // bottom-left
+  ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x, y + h - size);
   ctx.lineTo(x, y + h);
@@ -530,14 +577,14 @@ function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
   ctx.fill();
   ctx.fillStyle = accentColor;
   ctx.beginPath();
-  ctx.moveTo(x + 24, y + h - 24);
-  ctx.lineTo(x + 24, y + h - size * 0.55);
-  ctx.lineTo(x + size * 0.55, y + h - 24);
+  ctx.moveTo(x + 16, y + h - 16);
+  ctx.lineTo(x + 16, y + h - size * 0.55);
+  ctx.lineTo(x + size * 0.55, y + h - 16);
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = color;
   // bottom-right
+  ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x + w - size, y + h - size);
   ctx.lineTo(x + w, y + h);
@@ -546,9 +593,9 @@ function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
   ctx.fill();
   ctx.fillStyle = accentColor;
   ctx.beginPath();
-  ctx.moveTo(x + w - 24, y + h - 24);
-  ctx.lineTo(x + w - 24, y + h - size * 0.55);
-  ctx.lineTo(x + w - size * 0.55, y + h - 24);
+  ctx.moveTo(x + w - 16, y + h - 16);
+  ctx.lineTo(x + w - 16, y + h - size * 0.55);
+  ctx.lineTo(x + w - size * 0.55, y + h - 16);
   ctx.closePath();
   ctx.fill();
 }
@@ -569,11 +616,9 @@ function drawZigZag(ctx, x, y, w, h, color, teeth) {
 }
 
 function drawMemphisBackdrop(ctx, x, y, w, h) {
-  // Scattered memphis shapes in the pale field, avoiding the header/photo area.
   ctx.save();
   ctx.globalAlpha = 0.35;
 
-  // outline circles
   ctx.strokeStyle = THEME.greenMid;
   ctx.lineWidth = 3;
 
@@ -588,7 +633,6 @@ function drawMemphisBackdrop(ctx, x, y, w, h) {
     ctx.stroke();
   });
 
-  // small filled squares (rotated)
   ctx.fillStyle = THEME.greenMid;
   const squares = [
     [70, 160, 14, 20],
@@ -602,7 +646,6 @@ function drawMemphisBackdrop(ctx, x, y, w, h) {
     ctx.restore();
   });
 
-  // tiny dots
   const dots = [
     [120, h - 260],
     [w - 120, 220],
@@ -622,7 +665,6 @@ function drawMemphisDots(ctx, x, y, w, h) {
   ctx.globalAlpha = 0.22;
   ctx.fillStyle = THEME.white;
 
-  // scattered dots inside header
   const pts = [
     [x + w * 0.08, y + h * 0.30],
     [x + w * 0.14, y + h * 0.72],
@@ -638,7 +680,6 @@ function drawMemphisDots(ctx, x, y, w, h) {
     ctx.fill();
   });
 
-  // small triangle
   ctx.beginPath();
   ctx.moveTo(x + w * 0.10, y + h * 0.50);
   ctx.lineTo(x + w * 0.14, y + h * 0.44);
@@ -659,13 +700,13 @@ function drawMemphisDots(ctx, x, y, w, h) {
 function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   const cx = x + w / 2;
 
-  // Eyebrow — small tag
+  // Eyebrow tag
   ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
   const eW = ctx.measureText(eyebrow).width;
   const tagW = eW + 44;
-  const tagH = 44;
+  const tagH = 42;
   const tagX = cx - tagW / 2;
-  const tagY = y + 22;
+  const tagY = y + 20;
 
   ctx.fillStyle = THEME.greenLight;
   ctx.fillRect(tagX, tagY, tagW, tagH);
@@ -675,11 +716,11 @@ function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
   ctx.fillText(eyebrow, cx, tagY + tagH / 2 + 1);
 
-  // Title — auto-split into 2 lines if long
-  const lines = fitTitleLines(ctx, title, w - 120, 68);
-  const lineHeight = 78;
+  // Title
+  const lines = fitTitleLines(ctx, title, w - 120, 64);
+  const lineHeight = 72;
   const totalH = lines.length * lineHeight;
-  const startY = y + h / 2 - totalH / 2 + 24;
+  const startY = y + h / 2 - totalH / 2 + 22;
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -687,26 +728,23 @@ function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   lines.forEach((line, i) => {
     const ly = startY + i * lineHeight + lineHeight / 2;
 
-    // Stroke
-    ctx.font = `900 68px "Trebuchet MS", sans-serif`;
+    ctx.font = `900 64px "Trebuchet MS", sans-serif`;
     ctx.lineJoin = 'round';
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 9;
     ctx.strokeStyle = THEME.greenMid;
     ctx.strokeText(line, cx, ly);
 
-    // Hard shadow
     ctx.fillStyle = THEME.greenMid;
-    ctx.fillText(line, cx + 5, ly + 5);
+    ctx.fillText(line, cx + 4, ly + 4);
 
-    // Fill
     ctx.fillStyle = THEME.white;
     ctx.fillText(line, cx, ly);
   });
 
   // Subtitle
   ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 24px "Trebuchet MS", sans-serif`;
-  ctx.fillText(subtitle, cx, y + h - 40);
+  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
+  ctx.fillText(subtitle, cx, y + h - 32);
 }
 
 function fitTitleLines(ctx, text, maxWidth, fontSize) {
@@ -734,21 +772,21 @@ function fitTitleLines(ctx, text, maxWidth, fontSize) {
 function drawRetroFooter(ctx, x, y, w, h) {
   const cx = x + w / 2;
 
-  // Badge — bold outlined rectangle (rotated slightly)
+  // Badge
   ctx.save();
-  ctx.translate(cx, y + 52);
+  ctx.translate(cx, y + 42);
   ctx.rotate(-1.5 * Math.PI / 180);
 
-  const badgeText = `TEACHERS DAY '95  /  NO. ${new Date().getFullYear()}`;
-  ctx.font = `900 22px "Courier New", monospace`;
-  const bw = ctx.measureText(badgeText).width + 44;
-  const bh = 46;
+  const badgeText = `TEACHERS DAY  /  NO. ${new Date().getFullYear()}`;
+  ctx.font = `900 20px "Courier New", monospace`;
+  const bw = ctx.measureText(badgeText).width + 40;
+  const bh = 40;
 
   ctx.fillStyle = THEME.greenLight;
   ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
 
   ctx.strokeStyle = THEME.green;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.strokeRect(-bw / 2, -bh / 2, bw, bh);
 
   ctx.fillStyle = THEME.green;
@@ -758,35 +796,35 @@ function drawRetroFooter(ctx, x, y, w, h) {
 
   ctx.restore();
 
-  // Tagline — "Teacher, Ikaw naman." in bold italic
+  // Tagline
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const tagY = y + h / 2 + 24;
+  const tagY = y + h / 2 + 16;
 
-  ctx.font = `italic 900 52px "Trebuchet MS", sans-serif`;
+  ctx.font = `italic 900 44px "Trebuchet MS", sans-serif`;
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 8;
+  ctx.lineWidth = 6;
   ctx.strokeStyle = THEME.greenMid;
   ctx.strokeText(TAGLINE, cx, tagY);
 
   ctx.fillStyle = THEME.greenMid;
-  ctx.fillText(TAGLINE, cx + 4, tagY + 4);
+  ctx.fillText(TAGLINE, cx + 3, tagY + 3);
 
   ctx.fillStyle = THEME.white;
   ctx.fillText(TAGLINE, cx, tagY);
 
   // Date
   ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 24px "Courier New", monospace`;
+  ctx.font = `bold 20px "Courier New", monospace`;
   ctx.fillText(
     new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
     cx,
-    y + h - 30
+    y + h - 20
   );
 
-  // Retro barcode strip
-  drawBarcode(ctx, x + 30, y + h - 16, 180, 10);
+  // Barcode
+  drawBarcode(ctx, x + 24, y + h - 14, 160, 8);
 }
 
 function drawBarcode(ctx, x, y, w, h) {
@@ -805,13 +843,12 @@ function drawBarcode(ctx, x, y, w, h) {
 }
 
 function drawNumberTag(ctx, x, y, text) {
-  ctx.font = `900 24px "Courier New", monospace`;
-  const padding = 16;
+  ctx.font = `900 22px "Courier New", monospace`;
+  const padding = 14;
   const textW = ctx.measureText(text).width;
   const boxW = textW + padding * 2;
-  const boxH = 44;
+  const boxH = 40;
 
-  // shadow
   ctx.fillStyle = THEME.greenMid;
   ctx.fillRect(x + 4, y + 4, boxW, boxH);
 
@@ -819,7 +856,7 @@ function drawNumberTag(ctx, x, y, text) {
   ctx.fillRect(x, y, boxW, boxH);
 
   ctx.strokeStyle = THEME.white;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.strokeRect(x, y, boxW, boxH);
 
   ctx.fillStyle = THEME.white;
@@ -833,11 +870,11 @@ function drawStickerTag(ctx, x, y, text, rotateDeg) {
   ctx.translate(x, y);
   ctx.rotate((rotateDeg * Math.PI) / 180);
 
-  ctx.font = `900 22px "Courier New", monospace`;
-  const padding = 18;
+  ctx.font = `900 20px "Courier New", monospace`;
+  const padding = 16;
   const textW = ctx.measureText(text).width;
   const boxW = textW + padding * 2;
-  const boxH = 44;
+  const boxH = 40;
 
   ctx.fillStyle = THEME.white;
   ctx.fillRect(-4, -4, boxW + 8, boxH + 8);
