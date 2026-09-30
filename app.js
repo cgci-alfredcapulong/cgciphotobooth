@@ -147,7 +147,7 @@ retakeBtn.addEventListener('click', () => {
 /**
  * Capture the current video frame.
  * - Fun mode: square 1:1 (1200 x 1200)
- * - Department mode: landscape 7:5 (1680 x 1200) — matches 5x7 print & template slot
+ * - Department mode: landscape 7:5 (1680 x 1200)
  */
 function captureFrame() {
   const targetW = mode === 'department' ? 1680 : 1200;
@@ -352,7 +352,7 @@ async function generateFunStrip(imgs) {
   return canvas.toDataURL('image/png');
 }
 
-/* ---------------- DEPARTMENT (framed, landscape 7:5) --------------- */
+/* ---------------- DEPARTMENT (7:5 landscape, photo fills slot) --------------- */
 async function generateDepartmentImage(imgSrc, departmentName) {
   // 7:5 aspect = exactly 5x7 landscape at 300 DPI
   const W = 2100;
@@ -360,7 +360,9 @@ async function generateDepartmentImage(imgSrc, departmentName) {
 
   const FRAME = 28;
   const FRAME_INNER = 4;
-  const CONTENT_PAD = 44;
+  const HEADER_H = 110;
+  const FOOTER_H = 90;
+  const GAP = 20;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -379,29 +381,13 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const lineInset = FRAME + 6;
   ctx.strokeRect(lineInset, lineInset, W - lineInset * 2, H - lineInset * 2);
 
-  const matInset = FRAME + 12;
-  ctx.fillStyle = THEME.white;
-  ctx.fillRect(matInset, matInset, W - matInset * 2, H - matInset * 2);
+  /* ---------- CONTENT AREA ---------- */
+  const contentX = FRAME + 12;
+  const contentY = FRAME + 12;
+  const contentW = W - (FRAME + 12) * 2;
+  const contentH = H - (FRAME + 12) * 2;
 
-  drawCornerAccents(
-    ctx,
-    matInset,
-    matInset,
-    W - matInset * 2,
-    H - matInset * 2,
-    80,
-    THEME.green,
-    THEME.greenMid
-  );
-
-  /* ---------- CONTENT BOUNDS ---------- */
-  const contentX = matInset + CONTENT_PAD;
-  const contentY = matInset + CONTENT_PAD;
-  const contentW = W - (matInset + CONTENT_PAD) * 2;
-  const contentH = H - (matInset + CONTENT_PAD) * 2;
-
-  /* ---------- HEADER (short, left-aligned) ---------- */
-  const HEADER_H = 104;
+  /* ---------- HEADER ---------- */
   const hx = contentX;
   const hy = contentY;
   const hw = contentW;
@@ -434,13 +420,13 @@ async function generateDepartmentImage(imgSrc, departmentName) {
 
   ctx.fillStyle = THEME.greenLight;
   ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
-  ctx.fillText('TEACHERS DAY', hx + 36, hy + 28);
+  ctx.fillText('TEACHERS DAY', hx + 36, hy + 30);
 
   ctx.fillStyle = THEME.white;
-  ctx.font = `900 50px "Trebuchet MS", sans-serif`;
-  const titleLines = fitTitleLines(ctx, dept.toUpperCase(), hw - 420, 50);
-  const titleLineH = 54;
-  const titleStartY = hy + 60 + (titleLines.length === 1 ? 10 : 0);
+  ctx.font = `900 52px "Trebuchet MS", sans-serif`;
+  const titleLines = fitTitleLines(ctx, dept.toUpperCase(), hw - 440, 52);
+  const titleLineH = 56;
+  const titleStartY = hy + 64 + (titleLines.length === 1 ? 10 : 0);
 
   titleLines.forEach((line, i) => {
     ctx.fillText(line, hx + 36, titleStartY + i * titleLineH);
@@ -449,7 +435,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.font = `italic 900 32px "Trebuchet MS", sans-serif`;
   const tagText = TAGLINE;
   const tagW = ctx.measureText(tagText).width + 44;
-  const tagH = 60;
+  const tagH = 62;
   const tagX = hx + hw - tagW - 36;
   const tagY = hy + (hh - tagH) / 2;
 
@@ -464,8 +450,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.textAlign = 'center';
   ctx.fillText(tagText, tagX + tagW / 2, tagY + tagH / 2 + 2);
 
-  /* ---------- FOOTER (short, left + right aligned) ---------- */
-  const FOOTER_H = 86;
+  /* ---------- FOOTER ---------- */
   const fy = contentY + contentH - FOOTER_H;
 
   ctx.fillStyle = THEME.greenMid;
@@ -513,40 +498,22 @@ async function generateDepartmentImage(imgSrc, departmentName) {
     fy + (FOOTER_H - 8) / 2
   );
 
-  /* ---------- PHOTO (7:5 slot, matches capture & 5x7 print) ---------- */
-  const slotTop = hy + hh + 28;
-  const slotBottom = fy - 28;
-  const slotMaxH = slotBottom - slotTop;
-  const slotMaxW = contentW;
+  /* ---------- PHOTO (fills full slot edge-to-edge) ---------- */
+  const photoX = contentX;
+  const photoY = hy + hh + GAP;
+  const photoW = contentW;
+  const photoH = fy - photoY - GAP;
 
-  // Build the largest 7:5 rectangle that fits in available space
-  let photoW = slotMaxW;
-  let photoH = photoW * 5 / 7;
-
-  if (photoH > slotMaxH) {
-    photoH = slotMaxH;
-    photoW = photoH * 7 / 5;
-  }
-
-  const photoX = contentX + (contentW - photoW) / 2;
-  const photoY = slotTop + (slotMaxH - photoH) / 2;
-
-  ctx.fillStyle = THEME.greenLight;
-  ctx.fillRect(photoX + 10, photoY + 10, photoW, photoH);
-
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(photoX - 8, photoY - 8, photoW + 16, photoH + 16);
-
-  ctx.fillStyle = THEME.white;
-  ctx.fillRect(photoX - 3, photoY - 3, photoW + 6, photoH + 6);
-
+  // Fill the entire slot — COVER (may crop top/bottom slightly)
   const img = await loadImage(imgSrc);
-  drawImageContain(ctx, img, photoX, photoY, photoW, photoH, THEME.greenPale);
+  drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
 
+  // Thin dark green outline hugging the photo
   ctx.strokeStyle = THEME.green;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 3;
   ctx.strokeRect(photoX, photoY, photoW, photoH);
 
+  // Corner sticker tag
   drawStickerTag(ctx, photoX + 24, photoY + 24, 'PHOTO 01', -4);
 
   return canvas.toDataURL('image/png');
