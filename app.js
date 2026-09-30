@@ -147,10 +147,10 @@ retakeBtn.addEventListener('click', () => {
 /**
  * Capture the current video frame.
  * - Fun mode: square 1:1 (1200 x 1200)
- * - Department mode: landscape 4:3 (1600 x 1200)
+ * - Department mode: landscape 3:2 (1800 x 1200) — matches template slot
  */
 function captureFrame() {
-  const targetW = mode === 'department' ? 1600 : 1200;
+  const targetW = mode === 'department' ? 1800 : 1200;
   const targetH = mode === 'department' ? 1200 : 1200;
 
   const canvas = document.createElement('canvas');
@@ -412,7 +412,6 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.fillStyle = THEME.green;
   ctx.fillRect(hx, hy, hw, hh);
 
-  // Diagonal stripes behind header
   ctx.save();
   ctx.beginPath();
   ctx.rect(hx, hy, hw, hh);
@@ -427,18 +426,15 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   }
   ctx.restore();
 
-  // Left-aligned title + right-aligned tag
   const dept = (departmentName && departmentName.trim()) || 'Department';
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  // Small eyebrow above title
   ctx.fillStyle = THEME.greenLight;
   ctx.font = `bold 18px "Trebuchet MS", sans-serif`;
   ctx.fillText('TEACHERS DAY', hx + 32, hy + 26);
 
-  // Department name (big)
   ctx.fillStyle = THEME.white;
   ctx.font = `900 46px "Trebuchet MS", sans-serif`;
   const titleLines = fitTitleLines(ctx, dept.toUpperCase(), hw - 360, 46);
@@ -449,7 +445,6 @@ async function generateDepartmentImage(imgSrc, departmentName) {
     ctx.fillText(line, hx + 32, titleStartY + i * titleLineH);
   });
 
-  // Right side: tagline box
   ctx.font = `italic 900 30px "Trebuchet MS", sans-serif`;
   const tagText = TAGLINE;
   const tagW = ctx.measureText(tagText).width + 40;
@@ -478,7 +473,6 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.fillStyle = THEME.green;
   ctx.fillRect(hx, fy, hw, FOOTER_H - 8);
 
-  // Left: badge
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
@@ -500,7 +494,6 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.textAlign = 'center';
   ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1);
 
-  // Center: "ONE TEAM. ONE FAMILY."
   ctx.fillStyle = THEME.greenLight;
   ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
   ctx.textAlign = 'center';
@@ -510,7 +503,6 @@ async function generateDepartmentImage(imgSrc, departmentName) {
     fy + (FOOTER_H - 8) / 2
   );
 
-  // Right: date
   ctx.fillStyle = THEME.greenLight;
   ctx.font = `bold 18px "Courier New", monospace`;
   ctx.textAlign = 'right';
@@ -520,48 +512,44 @@ async function generateDepartmentImage(imgSrc, departmentName) {
     fy + (FOOTER_H - 8) / 2
   );
 
-  /* ---------- PHOTO (4:3 slot, no crop) ---------- */
+  /* ---------- PHOTO (3:2 slot, matches capture) ---------- */
   const slotTop = hy + hh + 24;
   const slotBottom = fy - 24;
   const slotMaxH = slotBottom - slotTop;
   const slotMaxW = contentW;
 
   let photoW = slotMaxW;
-  let photoH = photoW * 3 / 4;
+  let photoH = photoW * 2 / 3;
 
   if (photoH > slotMaxH) {
     photoH = slotMaxH;
-    photoW = photoH * 4 / 3;
+    photoW = photoH * 3 / 2;
   }
 
   const photoX = contentX + (contentW - photoW) / 2;
   const photoY = slotTop + (slotMaxH - photoH) / 2;
 
-  // Sticker shadow
   ctx.fillStyle = THEME.greenLight;
   ctx.fillRect(photoX + 10, photoY + 10, photoW, photoH);
 
-  // Frame
   ctx.fillStyle = THEME.green;
   ctx.fillRect(photoX - 8, photoY - 8, photoW + 16, photoH + 16);
 
   ctx.fillStyle = THEME.white;
   ctx.fillRect(photoX - 3, photoY - 3, photoW + 6, photoH + 6);
 
-  // Draw photo — CONTAIN (no crop, letterboxed if needed)
   const img = await loadImage(imgSrc);
   drawImageContain(ctx, img, photoX, photoY, photoW, photoH, THEME.greenPale);
 
-  // Thin outline
   ctx.strokeStyle = THEME.green;
   ctx.lineWidth = 2;
   ctx.strokeRect(photoX, photoY, photoW, photoH);
 
-  // Corner sticker tag
   drawStickerTag(ctx, photoX + 22, photoY + 22, 'PHOTO 01', -4);
 
   return canvas.toDataURL('image/png');
 }
+
 /* ================================================================
    RETRO DRAWING HELPERS
    ================================================================ */
@@ -743,7 +731,6 @@ function drawMemphisDots(ctx, x, y, w, h) {
 function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   const cx = x + w / 2;
 
-  // Eyebrow tag
   ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
   const eW = ctx.measureText(eyebrow).width;
   const tagW = eW + 40;
@@ -759,7 +746,6 @@ function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
   ctx.fillText(eyebrow, cx, tagY + tagH / 2 + 1);
 
-  // Title
   const lines = fitTitleLines(ctx, title, w - 120, 60);
   const lineHeight = 66;
   const totalH = lines.length * lineHeight;
@@ -784,7 +770,6 @@ function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
     ctx.fillText(line, cx, ly);
   });
 
-  // Subtitle
   ctx.fillStyle = THEME.greenLight;
   ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
   ctx.fillText(subtitle, cx, y + h - 26);
@@ -815,7 +800,6 @@ function fitTitleLines(ctx, text, maxWidth, fontSize) {
 function drawRetroFooter(ctx, x, y, w, h) {
   const cx = x + w / 2;
 
-  // Badge
   ctx.save();
   ctx.translate(cx, y + 36);
   ctx.rotate(-1.5 * Math.PI / 180);
@@ -839,7 +823,6 @@ function drawRetroFooter(ctx, x, y, w, h) {
 
   ctx.restore();
 
-  // Tagline
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -857,7 +840,6 @@ function drawRetroFooter(ctx, x, y, w, h) {
   ctx.fillStyle = THEME.white;
   ctx.fillText(TAGLINE, cx, tagY);
 
-  // Date
   ctx.fillStyle = THEME.greenLight;
   ctx.font = `bold 18px "Courier New", monospace`;
   ctx.fillText(
@@ -866,7 +848,6 @@ function drawRetroFooter(ctx, x, y, w, h) {
     y + h - 18
   );
 
-  // Barcode
   drawBarcode(ctx, x + 24, y + h - 12, 140, 7);
 }
 
@@ -943,9 +924,6 @@ function loadImage(src) {
   });
 }
 
-/**
- * Fill the whole target rect (crop if needed).
- */
 function drawImageCover(ctx, img, x, y, w, h) {
   const ir = img.width / img.height;
   const tr = w / h;
@@ -966,9 +944,6 @@ function drawImageCover(ctx, img, x, y, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-/**
- * Draw the image fully visible (no crop), letterboxed if needed.
- */
 function drawImageContain(ctx, img, x, y, w, h, bgColor) {
   if (bgColor) {
     ctx.fillStyle = bgColor;
