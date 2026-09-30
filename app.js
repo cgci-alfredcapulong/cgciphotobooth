@@ -397,7 +397,7 @@ function buildPrintHTML(imgs) {
             <div class="header">
               <div class="eyebrow">With Gratitude</div>
               <div class="title">Happy<br/>Teachers Day</div>
-              <div class="sub-title">Thank You For Everything</div>
+              <div class="sub-title">Teacher, Ikaw naman!</div>
             </div>
 
             ${photoCells}
