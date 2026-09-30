@@ -128,10 +128,12 @@ async function uploadPhoto(dataUrl) {
 
 /* ------------------------------------------------------------------
    PRINT LAYOUT - 90's THEME
-   A4 landscape (297mm x 210mm). Strip ~72mm wide, aligned right.
+   SHORT BOND PAPER (Letter 8.5 x 11 in) in LANDSCAPE
+   = 279.4mm x 215.9mm
+   Strip ~70mm wide, placed on the LEFT side.
    ------------------------------------------------------------------ */
 
-const STRIP_ALIGN = 'right'; // 'right' | 'left' | 'center'
+const STRIP_ALIGN = 'left'; // 'right' | 'left' | 'center'
 
 function buildPrintHTML(imgs) {
   const photoCells = imgs.map((src, i) => `
@@ -156,12 +158,13 @@ function buildPrintHTML(imgs) {
     <head>
       <title>Print</title>
       <style>
-        @page { size: A4 landscape; margin: 0; }
+        /* Short bond = US Letter 8.5 x 11 in, landscape */
+        @page { size: 11in 8.5in; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         html, body {
-          width: 297mm;
-          height: 210mm;
+          width: 279.4mm;
+          height: 215.9mm;
           background: #ffffff;
           font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
           color: #1a4d2e;
@@ -171,19 +174,19 @@ function buildPrintHTML(imgs) {
         }
 
         .page {
-          width: 297mm;
-          height: 210mm;
+          width: 279.4mm;
+          height: 215.9mm;
           display: flex;
           align-items: center;
           justify-content: ${justify};
-          padding: 8mm;
+          padding: 6mm;
           background: #ffffff;
         }
 
         /* ---------- STRIP ---------- */
         .strip {
-          width: 72mm;
-          height: 194mm;
+          width: 70mm;
+          height: 200mm;
           padding: 4mm;
           background: #ffffff;
           position: relative;
@@ -192,7 +195,6 @@ function buildPrintHTML(imgs) {
           gap: 2.5mm;
         }
 
-        /* Chunky 90's double border */
         .strip::before {
           content: "";
           position: absolute;
@@ -209,7 +211,6 @@ function buildPrintHTML(imgs) {
           pointer-events: none;
         }
 
-        /* Diagonal accent blocks in corners - very 90's */
         .corner-accent {
           position: absolute;
           width: 8mm;
@@ -217,22 +218,10 @@ function buildPrintHTML(imgs) {
           background: #1a4d2e;
           z-index: 2;
         }
-        .corner-accent.tl {
-          top: 0; left: 0;
-          clip-path: polygon(0 0, 100% 0, 0 100%);
-        }
-        .corner-accent.tr {
-          top: 0; right: 0;
-          clip-path: polygon(0 0, 100% 0, 100% 100%);
-        }
-        .corner-accent.bl {
-          bottom: 0; left: 0;
-          clip-path: polygon(0 0, 0 100%, 100% 100%);
-        }
-        .corner-accent.br {
-          bottom: 0; right: 0;
-          clip-path: polygon(100% 0, 100% 100%, 0 100%);
-        }
+        .corner-accent.tl { top: 0; left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+        .corner-accent.tr { top: 0; right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+        .corner-accent.bl { bottom: 0; left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+        .corner-accent.br { bottom: 0; right: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
 
         .inner {
           position: relative;
@@ -251,11 +240,9 @@ function buildPrintHTML(imgs) {
           background: #1a4d2e;
           color: #ffffff;
           position: relative;
-          border-radius: 0;
           box-shadow: 1.6mm 1.6mm 0 #2d6a4f;
         }
 
-        /* Zig-zag underline strip - retro */
         .header::after {
           content: "";
           position: absolute;
@@ -284,7 +271,6 @@ function buildPrintHTML(imgs) {
           letter-spacing: 0.4mm;
           text-transform: uppercase;
           line-height: 1.05;
-          font-family: 'Trebuchet MS', sans-serif;
           text-shadow: 0.5mm 0.5mm 0 #2d6a4f;
         }
 
@@ -339,7 +325,6 @@ function buildPrintHTML(imgs) {
           position: relative;
         }
 
-        /* Zig-zag top border */
         .footer::before {
           content: "";
           position: absolute;
@@ -381,7 +366,7 @@ function buildPrintHTML(imgs) {
         }
 
         @media print {
-          html, body { width: 297mm; height: 210mm; }
+          html, body { width: 279.4mm; height: 215.9mm; }
         }
       </style>
     </head>
@@ -397,7 +382,7 @@ function buildPrintHTML(imgs) {
             <div class="header">
               <div class="eyebrow">With Gratitude</div>
               <div class="title">Happy<br/>Teachers Day</div>
-              <div class="sub-title">Teacher, Ikaw naman!</div>
+              <div class="sub-title">Thank You For Everything</div>
             </div>
 
             ${photoCells}
