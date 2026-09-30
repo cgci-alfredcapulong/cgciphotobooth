@@ -349,9 +349,11 @@ async function generateFunStrip(imgs) {
 async function generateDepartmentImage(imgSrc, departmentName) {
   const W = 1800;
   const H = 1350;
-  const PAD = 70;
-  const HEADER_H = 300;
-  const FOOTER_H = 260;
+  const PAD = 40;              // was 70 — closer to edges
+  const HEADER_H = 280;        // was 300 — slightly shorter
+  const FOOTER_H = 200;        // was 260 — much shorter
+  const FRAME_OUTER = 8;       // was 14
+  const FRAME_INNER = 3;       // was 6
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -366,7 +368,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.fillStyle = THEME.greenPale;
   ctx.fillRect(24, 24, W - 48, H - 48);
 
-  // Chunky outer border
+  // Chunky outer border (keep it — this is the canvas edge, not the photo)
   drawChunkyBorder(ctx, 0, 0, W, H, 26, THEME.green, 6);
 
   // Memphis decorations
@@ -402,37 +404,52 @@ async function generateDepartmentImage(imgSrc, departmentName) {
 
   const dept = (departmentName && departmentName.trim()) || 'Department';
   drawRetroHeader(ctx, hx, hy, hw, hh, {
-    eyebrow: "TEACHERS DAY '95",
+    eyebrow: "TEACHERS DAY",
     title: dept.toUpperCase(),
     subtitle: 'ONE TEAM. ONE FAMILY.'
   });
 
   drawZigZag(ctx, hx, hy + hh, hw, 24, THEME.green, 34);
 
-  /* ---------- PHOTO ---------- */
-  const photoY = hy + hh + 70;
-  const photoH = H - photoY - FOOTER_H - 60;
+  /* ---------- PHOTO (bigger, thinner frame) ---------- */
+  const photoY = hy + hh + 55;     // was +70 — closer to header
+  const photoH = H - photoY - FOOTER_H - 40;
   const photoX = PAD;
   const photoW = W - PAD * 2;
 
+  // Offset shadow (thin)
   ctx.fillStyle = THEME.greenLight;
-  ctx.fillRect(photoX + 20, photoY + 20, photoW, photoH);
+  ctx.fillRect(photoX + 12, photoY + 12, photoW, photoH);
 
+  // Outer frame (thin green)
   ctx.fillStyle = THEME.green;
-  ctx.fillRect(photoX - 14, photoY - 14, photoW + 28, photoH + 28);
+  ctx.fillRect(
+    photoX - FRAME_OUTER,
+    photoY - FRAME_OUTER,
+    photoW + FRAME_OUTER * 2,
+    photoH + FRAME_OUTER * 2
+  );
 
+  // Inner white gutter (thin)
   ctx.fillStyle = THEME.white;
-  ctx.fillRect(photoX - 6, photoY - 6, photoW + 12, photoH + 12);
+  ctx.fillRect(
+    photoX - FRAME_INNER,
+    photoY - FRAME_INNER,
+    photoW + FRAME_INNER * 2,
+    photoH + FRAME_INNER * 2
+  );
 
+  // Photo
   const img = await loadImage(imgSrc);
   drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
 
+  // Thin inner outline
   ctx.strokeStyle = THEME.green;
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 3;
   ctx.strokeRect(photoX, photoY, photoW, photoH);
 
   // Corner "photo" sticker tag
-  drawStickerTag(ctx, photoX + 24, photoY + 24, `PHOTO 01`, -4);
+  drawStickerTag(ctx, photoX + 20, photoY + 20, `PHOTO 01`, -4);
 
   /* ---------- FOOTER ---------- */
   const fy = H - FOOTER_H;
@@ -440,12 +457,12 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   drawZigZag(ctx, 60, fy - 24, W - 120, 24, THEME.green, 34);
 
   ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(78, fy + 18, W - 156, FOOTER_H - 80);
+  ctx.fillRect(78, fy + 18, W - 156, FOOTER_H - 60);
 
   ctx.fillStyle = THEME.green;
-  ctx.fillRect(60, fy, W - 120, FOOTER_H - 80);
+  ctx.fillRect(60, fy, W - 120, FOOTER_H - 60);
 
-  drawRetroFooter(ctx, 60, fy, W - 120, FOOTER_H - 80);
+  drawRetroFooter(ctx, 60, fy, W - 120, FOOTER_H - 60);
 
   return canvas.toDataURL('image/png');
 }
