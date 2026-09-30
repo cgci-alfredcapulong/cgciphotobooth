@@ -70,7 +70,7 @@ modeSwitcher.addEventListener('click', (e) => {
     headerSubtitle.textContent = 'One for the whole team';
   } else {
     headerTitle.textContent = 'Teachers Day Photobooth';
-    headerSubtitle.textContent = "Est. 1995 / Teacher, Ikaw Naman!";
+    headerSubtitle.textContent = 'Est. 1995 / Teacher, Ikaw Naman!';
   }
 });
 
@@ -159,6 +159,10 @@ function captureFrame() {
   }
 
   ctx.drawImage(video, sx, sy, size, size, 0, 0, 1200, 1200);
+
+  // Reset transform so no state leaks into subsequent draws
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
   return canvas.toDataURL('image/jpeg', 0.95);
 }
 
@@ -221,14 +225,10 @@ function triggerDownload(dataUrl, mode) {
 }
 
 /* ================================================================
-   IMAGE GENERATION - color scheme only, typography-driven
+   IMAGE GENERATION
    ================================================================ */
 
-/**
- * Shared title block used by both templates.
- * Draws: "TEACHER'S DAY / CELEBRATION" in cream on teal with a gold stroke.
- */
-function drawTitleBlock(ctx, cx, startY, size = 100) {
+function drawTitleBlock(ctx, cx, topY, size = 100) {
   const lines = ["TEACHER'S DAY", 'CELEBRATION'];
   const lineHeight = size * 1.05;
 
@@ -238,103 +238,88 @@ function drawTitleBlock(ctx, cx, startY, size = 100) {
   ctx.lineJoin = 'round';
 
   lines.forEach((line, i) => {
-    const ly = startY + i * lineHeight;
+    const ly = topY + i * lineHeight + lineHeight / 2;
 
-    // Gold outline
-    ctx.lineWidth = size * 0.18;
+    ctx.lineWidth = size * 0.16;
     ctx.strokeStyle = THEME.gold;
     ctx.strokeText(line, cx, ly);
 
-    // Teal fill
     ctx.fillStyle = THEME.teal;
     ctx.fillText(line, cx, ly);
   });
 
-  return startY + (lines.length - 1) * lineHeight + lineHeight * 0.55;
+  return topY + lines.length * lineHeight;
 }
 
-/**
- * Tagline: "Teacher, Ikaw Naman!" in orange italic with gold stroke
- * and a soft cream plate behind it.
- */
-function drawTagline(ctx, cx, y, size = 74) {
+function drawTagline(ctx, cx, centerY, size = 74) {
   ctx.font = `italic 900 ${size}px "Trebuchet MS", "Arial Black", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
 
   const w = ctx.measureText(TAGLINE).width;
-  const padX = 28;
-  const padY = size * 0.42;
+  const padX = 32;
+  const padY = size * 0.45;
 
-  // Cream plate
-  ctx.fillStyle = 'rgba(245, 239, 208, 0.9)';
-  ctx.fillRect(cx - w / 2 - padX, y - padY, w + padX * 2, padY * 2);
+  ctx.fillStyle = 'rgba(245, 239, 208, 0.95)';
+  ctx.fillRect(cx - w / 2 - padX, centerY - padY, w + padX * 2, padY * 2);
 
-  // Gold stroke
-  ctx.lineWidth = size * 0.16;
+  ctx.lineWidth = size * 0.14;
   ctx.strokeStyle = THEME.gold;
-  ctx.strokeText(TAGLINE, cx, y);
+  ctx.strokeText(TAGLINE, cx, centerY);
 
-  // Orange fill
   ctx.fillStyle = THEME.orange;
-  ctx.fillText(TAGLINE, cx, y);
+  ctx.fillText(TAGLINE, cx, centerY);
+
+  return centerY + padY;
 }
 
-/**
- * Footer strip: mint band with a teal stamp badge, date, and coral/pink
- * accent bars on the sides. No decorative objects.
- */
 function drawFooterStrip(ctx, x, y, w, h) {
-  // Mint band
   ctx.fillStyle = THEME.mint;
   ctx.fillRect(x, y, w, h);
 
   const cx = x + w / 2;
 
-  // Stamp badge
-  const stampText = `TEACHERS DAY '95  /  NO. ${new Date().getFullYear()}`;
+  const stampText = `TEACHERS DAY  /  NO. ${new Date().getFullYear()}`;
   ctx.font = '900 22px "Courier New", monospace';
   const sw = ctx.measureText(stampText).width + 44;
   const sh = 46;
+  const sy = y + (h - sh - 40) / 2;
 
   ctx.fillStyle = THEME.teal;
-  ctx.fillRect(cx - sw / 2, y + 30, sw, sh);
+  ctx.fillRect(cx - sw / 2, sy, sw, sh);
 
   ctx.fillStyle = THEME.cream;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(stampText, cx, y + 30 + sh / 2 + 1);
+  ctx.fillText(stampText, cx, sy + sh / 2 + 1);
 
-  // Date
   ctx.fillStyle = THEME.teal;
-  ctx.font = 'bold 22px "Courier New", monospace';
+  ctx.font = 'bold 20px "Courier New", monospace';
   ctx.fillText(
     new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
     cx,
-    y + h - 40
+    sy + sh + 30
   );
-
-  // Side accent bars
-  ctx.fillStyle = THEME.coral;
-  ctx.fillRect(x + 24, y + h / 2 - 30, 6, 60);
-  ctx.fillRect(x + w - 30, y + h / 2 - 30, 6, 60);
-
-  ctx.fillStyle = THEME.pink;
-  ctx.fillRect(x + 36, y + h / 2 - 20, 4, 40);
-  ctx.fillRect(x + w - 40, y + h / 2 - 20, 4, 40);
 }
 
 /* ================================================================
-   FUN SHOTS - vertical 3-photo strip
+   FUN STRIP
    ================================================================ */
 async function generateFunStrip(imgs) {
   const W = 1200;
-  const HEADER_H = 420;
-  const FOOTER_H = 220;
   const PAD = 70;
   const GAP = 46;
   const PHOTO_SIZE = W - PAD * 2;
+  const FOOTER_H = 200;
+
+  const TITLE_SIZE = 104;
+  const titleTop = 60;
+  const titleBottom = titleTop + TITLE_SIZE * 1.05 * 2;
+  const taglineCenterY = titleBottom + 60;
+  const taglineBottom = taglineCenterY + TITLE_SIZE * 0.45 * 0.9;
+  const HEADER_H = taglineBottom + 40;
+
   const H = HEADER_H + (PHOTO_SIZE * 3) + (GAP * 2) + FOOTER_H + 40;
 
   const canvas = document.createElement('canvas');
@@ -342,38 +327,29 @@ async function generateFunStrip(imgs) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Cream background
   ctx.fillStyle = THEME.cream;
   ctx.fillRect(0, 0, W, H);
 
-  // Title
-  const titleEndY = drawTitleBlock(ctx, W / 2, 130, 104);
+  drawTitleBlock(ctx, W / 2, titleTop, TITLE_SIZE);
+  drawTagline(ctx, W / 2, taglineCenterY, 78);
 
-  // Tagline
-  drawTagline(ctx, W / 2, titleEndY + 40, 78);
-
-  /* ---------- PHOTOS ---------- */
   const photosStartY = HEADER_H + 20;
 
   for (let i = 0; i < 3; i++) {
     const y = photosStartY + i * (PHOTO_SIZE + GAP);
     const img = await loadImage(imgs[i]);
 
-    // Coral offset shadow
     ctx.fillStyle = THEME.coral;
-    ctx.fillRect(PAD + 10, y + 10, PHOTO_SIZE, PHOTO_SIZE);
+    ctx.fillRect(PAD + 8, y + 8, PHOTO_SIZE, PHOTO_SIZE);
 
-    // Teal frame
     ctx.fillStyle = THEME.teal;
-    ctx.fillRect(PAD - 8, y - 8, PHOTO_SIZE + 16, PHOTO_SIZE + 16);
+    ctx.fillRect(PAD - 6, y - 6, PHOTO_SIZE + 12, PHOTO_SIZE + 12);
 
-    // Photo
     ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
-    // Number badge in top-left (small teal circle with gold ring)
-    const bx = PAD + 40;
-    const by = y + 40;
-    const br = 26;
+    const bx = PAD + 46;
+    const by = y + 46;
+    const br = 24;
 
     ctx.fillStyle = THEME.teal;
     ctx.beginPath();
@@ -387,59 +363,53 @@ async function generateFunStrip(imgs) {
     ctx.stroke();
 
     ctx.fillStyle = THEME.cream;
-    ctx.font = '900 22px "Courier New", monospace';
+    ctx.font = '900 20px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(i + 1).padStart(2, '0'), bx, by + 1);
   }
 
-  /* ---------- FOOTER ---------- */
-  const footerY = H - FOOTER_H;
-  drawFooterStrip(ctx, 0, footerY, W, FOOTER_H);
+  drawFooterStrip(ctx, 0, H - FOOTER_H, W, FOOTER_H);
 
   return canvas.toDataURL('image/png');
 }
 
 /* ================================================================
-   DEPARTMENT - single landscape photo, with photo given more room
+   DEPARTMENT - photo-dominant layout
    ================================================================ */
 async function generateDepartmentImage(imgSrc, departmentName) {
   const W = 1800;
-  const H = 1350;
-  const PAD = 80;
-  const HEADER_H = 360;
-  const FOOTER_H = 180;
+  const H = 1200;
+  const PAD = 60;
+  const FOOTER_H = 160;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Cream background
   ctx.fillStyle = THEME.cream;
   ctx.fillRect(0, 0, W, H);
 
-  // Title
-  const titleEndY = drawTitleBlock(ctx, W / 2, 120, 118);
+  const TITLE_SIZE = 96;
+  const titleTop = 50;
+  const titleBottomY = drawTitleBlock(ctx, W / 2, titleTop, TITLE_SIZE);
 
-  // Tagline
-  drawTagline(ctx, W / 2, titleEndY + 46, 84);
+  const taglineCenterY = titleBottomY + 50;
+  const taglineBottomY = drawTagline(ctx, W / 2, taglineCenterY, 72);
 
-  /* ---------- DEPARTMENT BADGE ---------- */
   const dept = (departmentName && departmentName.trim()) || 'DEPARTMENT';
   const badgeText = dept.toUpperCase();
 
-  ctx.font = '900 40px "Trebuchet MS", "Arial Black", sans-serif';
-  const bw = ctx.measureText(badgeText).width + 72;
-  const bh = 68;
+  ctx.font = '900 36px "Trebuchet MS", "Arial Black", sans-serif';
+  const bw = ctx.measureText(badgeText).width + 64;
+  const bh = 60;
   const bx = W / 2 - bw / 2;
-  const by = HEADER_H - 30;
+  const by = taglineBottomY + 30;
 
-  // Coral shadow
   ctx.fillStyle = THEME.coral;
   ctx.fillRect(bx + 8, by + 8, bw, bh);
 
-  // Teal badge
   ctx.fillStyle = THEME.teal;
   ctx.fillRect(bx, by, bw, bh);
 
@@ -448,29 +418,23 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.textBaseline = 'middle';
   ctx.fillText(badgeText, W / 2, by + bh / 2 + 2);
 
-  /* ---------- PHOTO - bigger, thinner frame ---------- */
-  // Photo takes up almost all remaining space. Frame is a thin outline,
-  // not a chunky border, so the photo itself dominates.
-  const photoY = by + bh + 50;
-  const photoH = H - photoY - FOOTER_H - 50;
+  const photoY = by + bh + 40;
+  const photoH = H - photoY - FOOTER_H - 40;
   const photoX = PAD;
   const photoW = W - PAD * 2;
 
-  // Thin coral offset shadow (subtle)
   ctx.fillStyle = THEME.coral;
-  ctx.fillRect(photoX + 10, photoY + 10, photoW, photoH);
+  ctx.fillRect(photoX + 8, photoY + 8, photoW, photoH);
 
-  // Thin teal outline (much thinner than before)
   ctx.fillStyle = THEME.teal;
   ctx.fillRect(photoX - 5, photoY - 5, photoW + 10, photoH + 10);
 
   const img = await loadImage(imgSrc);
   drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
 
-  // Small number badge
   const tagX = photoX + 46;
   const tagY = photoY + 46;
-  const tagR = 26;
+  const tagR = 24;
 
   ctx.fillStyle = THEME.teal;
   ctx.beginPath();
@@ -484,14 +448,12 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.stroke();
 
   ctx.fillStyle = THEME.cream;
-  ctx.font = '900 22px "Courier New", monospace';
+  ctx.font = '900 20px "Courier New", monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('01', tagX, tagY + 1);
 
-  /* ---------- FOOTER ---------- */
-  const footerY = H - FOOTER_H;
-  drawFooterStrip(ctx, 0, footerY, W, FOOTER_H);
+  drawFooterStrip(ctx, 0, H - FOOTER_H, W, FOOTER_H);
 
   return canvas.toDataURL('image/png');
 }
