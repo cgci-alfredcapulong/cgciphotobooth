@@ -26,16 +26,12 @@ let photos = [];
 let facingMode = 'user';
 
 const THEME = {
-  greenDark:  '#1a4d2e',
-  greenDeep:  '#0f2e1c',
-  greenMid:   '#2d6a4f',
-  greenSoft:  '#40916c',
+  green: '#1a4d2e',
+  greenMid: '#2d6a4f',
   greenLight: '#d4e8db',
-  cream:      '#ffffff',
-  gold:       '#e8a83c'
+  greenPale: '#e8f3ec',
+  white: '#ffffff'
 };
-
-const TAGLINE = 'Teacher, Ikaw naman.';
 
 if (typeof DEPARTMENTS !== 'undefined') {
   DEPARTMENTS.forEach(d => {
@@ -53,7 +49,7 @@ modeSwitcher.addEventListener('click', (e) => {
   if (newMode === mode) return;
 
   mode = newMode;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === selector.btn));
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
 
   photos = [];
   results.innerHTML = '';
@@ -68,7 +64,7 @@ modeSwitcher.addEventListener('click', (e) => {
     headerSubtitle.textContent = 'One for the whole team';
   } else {
     headerTitle.textContent = 'Teachers Day Photobooth';
-    headerSubtitle.textContent = 'Teacher, Ikaw naman.';
+    headerSubtitle.textContent = 'Est. 1995 / Smile, you look great today';
   }
 });
 
@@ -157,8 +153,6 @@ function captureFrame() {
   }
 
   ctx.drawImage(video, sx, sy, size, size, 0, 0, 1200, 1200);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-
   return canvas.toDataURL('image/jpeg', 0.95);
 }
 
@@ -221,226 +215,566 @@ function triggerDownload(dataUrl, mode) {
 }
 
 /* ================================================================
-   SHARED DRAWING HELPERS - diagonal stripe dark green theme
+   IMAGE GENERATION - 90's THEME
    ================================================================ */
 
-/* Diagonal stripe background — mimics the on-screen UI background */
-function fillStripedBackground(ctx, w, h, baseColor, stripeColor, stripeWidth = 40) {
-  ctx.fillStyle = baseColor;
-  ctx.fillRect(0, 0, w, h);
+const TAGLINE = 'Teacher, Ikaw naman.';
 
-  ctx.save();
-  ctx.strokeStyle = stripeColor;
-  ctx.lineWidth = stripeWidth;
-  ctx.globalAlpha = 0.55;
+/**
+ * FUN SHOTS - vertical 3-photo strip
+ */
+async function generateFunStrip(imgs) {
+  const W = 1200;
+  const HEADER_H = 360;
+  const FOOTER_H = 260;
+  const PAD = 60;
+  const GAP = 48;
+  const PHOTO_SIZE = W - PAD * 2;
+  const H = HEADER_H + PAD / 2 + (PHOTO_SIZE * 3) + (GAP * 2) + FOOTER_H + PAD;
 
-  const step = stripeWidth * 2;
-  for (let i = -h; i < w + h; i += step) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i + h, h);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
 
-/* Outer decorative frame: cream outer border + green inner line + corner tabs */
-function drawOuterFrame(ctx, w, h) {
-  const OUTER = 16;
-  const GAP = 6;
-  const INNER = 4;
+  // White base
+  ctx.fillStyle = THEME.white;
+  ctx.fillRect(0, 0, W, H);
 
-  // Outer cream border
-  ctx.fillStyle = THEME.cream;
-  ctx.fillRect(0, 0, w, OUTER);
-  ctx.fillRect(0, h - OUTER, w, OUTER);
-  ctx.fillRect(0, 0, OUTER, h);
-  ctx.fillRect(w - OUTER, 0, OUTER, h);
+  // Pale green inner field (retro paper feel)
+  ctx.fillStyle = THEME.greenPale;
+  ctx.fillRect(20, 20, W - 40, H - 40);
 
-  // Inner green line
-  ctx.fillStyle = THEME.greenDark;
-  const inset = OUTER + GAP;
-  ctx.fillRect(inset, inset, w - inset * 2, INNER);
-  ctx.fillRect(inset, h - inset - INNER, w - inset * 2, INNER);
-  ctx.fillRect(inset, inset, INNER, h - inset * 2);
-  ctx.fillRect(w - inset - INNER, inset, INNER, h - inset * 2);
+  // Chunky outer border
+  drawChunkyBorder(ctx, 0, 0, W, H, 22, THEME.green, 5);
 
-  // Corner tabs (small cream squares in the corners)
-  const tabSize = 20;
-  ctx.fillStyle = THEME.cream;
-  ctx.fillRect(OUTER, OUTER, tabSize, tabSize);
-  ctx.fillRect(w - OUTER - tabSize, OUTER, tabSize, tabSize);
-  ctx.fillRect(OUTER, h - OUTER - tabSize, tabSize, tabSize);
-  ctx.fillRect(w - OUTER - tabSize, h - OUTER - tabSize, tabSize, tabSize);
-}
+  // Memphis decorations in the white margin
+  drawMemphisBackdrop(ctx, 0, 0, W, H);
 
-/* Header block: dark green panel with subtle stripes, cream text */
-function drawHeaderPanel(ctx, x, y, w, h, { tag, title, subtitle }) {
-  // Shadow behind panel
-  ctx.fillStyle = THEME.greenDeep;
-  ctx.fillRect(x + 8, y + 8, w, h);
+  // Corner triangles (chunky, two-tone)
+  drawCornerAccents(ctx, 0, 0, W, H, 110, THEME.green, THEME.greenMid);
 
-  // Panel with stripes
-  fillStripedBackground(ctx, w, h, THEME.greenDark, THEME.greenMid, 30);
+  /* ---------- HEADER ---------- */
+  const hx = 50, hy = 50, hw = W - 100, hh = HEADER_H - 70;
+
+  // Header hard shadow
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(hx + 16, hy + 16, hw, hh);
+
+  // Header block
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(hx, hy, hw, hh);
+
+  // Diagonal stripe band behind title
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x, y, w, h);
+  ctx.rect(hx, hy, hw, hh);
   ctx.clip();
-
-  // Re-draw stripes at correct offset by translating context
-  ctx.translate(x, y);
-  ctx.fillStyle = THEME.greenDark;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.save();
-  ctx.strokeStyle = THEME.greenMid;
-  ctx.lineWidth = 30;
-  ctx.globalAlpha = 0.55;
-  for (let i = -h; i < w + h; i += 60) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 6;
+  for (let i = -hh; i < hw + hh; i += 26) {
     ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i + h, h);
+    ctx.moveTo(hx + i, hy);
+    ctx.lineTo(hx + i + hh, hy + hh);
     ctx.stroke();
   }
   ctx.restore();
 
-  // Cream border inside panel
-  ctx.strokeStyle = THEME.cream;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(10, 10, w - 20, h - 20);
+  // Memphis dots inside header
+  drawMemphisDots(ctx, hx, hy, hw, hh);
 
-  // Small floating dots (memphis detail)
-  ctx.globalAlpha = 0.35;
-  ctx.fillStyle = THEME.cream;
-  const dots = [
-    [w * 0.08, h * 0.25, 4],
-    [w * 0.15, h * 0.75, 3],
-    [w * 0.85, h * 0.30, 4],
-    [w * 0.92, h * 0.70, 3],
-    [w * 0.20, h * 0.20, 2],
-    [w * 0.80, h * 0.80, 2]
-  ];
-  dots.forEach(([dx, dy, r]) => {
-    ctx.beginPath();
-    ctx.arc(dx, dy, r, 0, Math.PI * 2);
-    ctx.fill();
+  // Header text
+  drawRetroHeader(ctx, hx, hy, hw, hh, {
+    eyebrow: "TEACHERS DAY '95",
+    title: 'HAPPY TEACHERS DAY',
+    subtitle: 'SMILE, YOU LOOK GREAT TODAY'
   });
 
-  // Small play-triangles (left & right)
-  ctx.globalAlpha = 0.5;
-  ctx.fillStyle = THEME.greenSoft;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.06, h * 0.5);
-  ctx.lineTo(w * 0.12, h * 0.4);
-  ctx.lineTo(w * 0.12, h * 0.6);
-  ctx.closePath();
-  ctx.fill();
+  // Zig-zag under header (chunky)
+  drawZigZag(ctx, hx, hy + hh, hw, 22, THEME.green, 26);
 
-  ctx.beginPath();
-  ctx.moveTo(w * 0.94, h * 0.5);
-  ctx.lineTo(w * 0.88, h * 0.4);
-  ctx.lineTo(w * 0.88, h * 0.6);
-  ctx.closePath();
-  ctx.fill();
+  /* ---------- PHOTOS ---------- */
+  const startY = HEADER_H + 10;
 
-  ctx.restore();
+  for (let i = 0; i < 3; i++) {
+    const y = startY + i * (PHOTO_SIZE + GAP);
+    const img = await loadImage(imgs[i]);
 
-  // Tag (small cream box on top)
-  ctx.font = '900 22px "Courier New", monospace';
-  const tagW = ctx.measureText(tag).width + 44;
-  const tagH = 42;
-  const tagX = x + w / 2 - tagW / 2;
-  const tagY = y + 24;
+    // Sticker shadow
+    ctx.fillStyle = THEME.greenLight;
+    ctx.fillRect(PAD + 16, y + 16, PHOTO_SIZE, PHOTO_SIZE);
 
-  ctx.fillStyle = THEME.cream;
-  ctx.fillRect(tagX, tagY, tagW, tagH);
+    // Frame outer
+    ctx.fillStyle = THEME.green;
+    ctx.fillRect(PAD - 10, y - 10, PHOTO_SIZE + 20, PHOTO_SIZE + 20);
 
-  ctx.fillStyle = THEME.greenDark;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(tag, x + w / 2, tagY + tagH / 2 + 1);
+    // Frame inner (white gutter)
+    ctx.fillStyle = THEME.white;
+    ctx.fillRect(PAD - 4, y - 4, PHOTO_SIZE + 8, PHOTO_SIZE + 8);
 
-  // Title
-  ctx.font = '900 72px "Trebuchet MS", "Arial Black", sans-serif';
-  ctx.fillStyle = THEME.cream;
-  ctx.fillText(title, x + w / 2, y + h * 0.60);
+    // Photo
+    ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
-  // Subtitle
-  ctx.font = 'bold 24px "Trebuchet MS", sans-serif';
-  ctx.fillStyle = THEME.greenLight;
-  ctx.fillText(subtitle, x + w / 2, y + h * 0.82);
+    // Thin inner green line
+    ctx.strokeStyle = THEME.green;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(PAD, y, PHOTO_SIZE, PHOTO_SIZE);
+
+    // Number tag
+    drawNumberTag(ctx, PAD + 10, y + 10, String(i + 1).padStart(2, '0'));
+  }
+
+  /* ---------- FOOTER ---------- */
+  const fy = H - FOOTER_H - 10;
+
+  // Zig-zag above footer
+  drawZigZag(ctx, 50, fy - 22, W - 100, 22, THEME.green, 26);
+
+  // Footer block shadow
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(66, fy + 16, W - 132, FOOTER_H - 60);
+
+  // Footer block
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(50, fy, W - 100, FOOTER_H - 60);
+
+  drawRetroFooter(ctx, 50, fy, W - 100, FOOTER_H - 60);
+
+  return canvas.toDataURL('image/png');
 }
 
-/* Zig-zag divider strip (cream triangles pointing up) */
-function drawZigZagDivider(ctx, x, y, w, height, color) {
+/**
+ * DEPARTMENT - single landscape photo
+ */
+async function generateDepartmentImage(imgSrc, departmentName) {
+  const W = 1800;
+  const H = 1350;
+  const PAD = 70;
+  const HEADER_H = 300;
+  const FOOTER_H = 260;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // White base
+  ctx.fillStyle = THEME.white;
+  ctx.fillRect(0, 0, W, H);
+
+  // Pale inner field
+  ctx.fillStyle = THEME.greenPale;
+  ctx.fillRect(24, 24, W - 48, H - 48);
+
+  // Chunky outer border
+  drawChunkyBorder(ctx, 0, 0, W, H, 26, THEME.green, 6);
+
+  // Memphis decorations
+  drawMemphisBackdrop(ctx, 0, 0, W, H);
+
+  // Corner triangles
+  drawCornerAccents(ctx, 0, 0, W, H, 150, THEME.green, THEME.greenMid);
+
+  /* ---------- HEADER ---------- */
+  const hx = 60, hy = 60, hw = W - 120, hh = HEADER_H - 80;
+
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(hx + 18, hy + 18, hw, hh);
+
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(hx, hy, hw, hh);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(hx, hy, hw, hh);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 8;
+  for (let i = -hh; i < hw + hh; i += 32) {
+    ctx.beginPath();
+    ctx.moveTo(hx + i, hy);
+    ctx.lineTo(hx + i + hh, hy + hh);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  drawMemphisDots(ctx, hx, hy, hw, hh);
+
+  const dept = (departmentName && departmentName.trim()) || 'Department';
+  drawRetroHeader(ctx, hx, hy, hw, hh, {
+    eyebrow: "TEACHERS DAY '95",
+    title: dept.toUpperCase(),
+    subtitle: 'ONE TEAM. ONE FAMILY.'
+  });
+
+  drawZigZag(ctx, hx, hy + hh, hw, 24, THEME.green, 34);
+
+  /* ---------- PHOTO ---------- */
+  const photoY = hy + hh + 70;
+  const photoH = H - photoY - FOOTER_H - 60;
+  const photoX = PAD;
+  const photoW = W - PAD * 2;
+
+  ctx.fillStyle = THEME.greenLight;
+  ctx.fillRect(photoX + 20, photoY + 20, photoW, photoH);
+
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(photoX - 14, photoY - 14, photoW + 28, photoH + 28);
+
+  ctx.fillStyle = THEME.white;
+  ctx.fillRect(photoX - 6, photoY - 6, photoW + 12, photoH + 12);
+
+  const img = await loadImage(imgSrc);
+  drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
+
+  ctx.strokeStyle = THEME.green;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(photoX, photoY, photoW, photoH);
+
+  // Corner "photo" sticker tag
+  drawStickerTag(ctx, photoX + 24, photoY + 24, `PHOTO 01`, -4);
+
+  /* ---------- FOOTER ---------- */
+  const fy = H - FOOTER_H;
+
+  drawZigZag(ctx, 60, fy - 24, W - 120, 24, THEME.green, 34);
+
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(78, fy + 18, W - 156, FOOTER_H - 80);
+
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(60, fy, W - 120, FOOTER_H - 80);
+
+  drawRetroFooter(ctx, 60, fy, W - 120, FOOTER_H - 80);
+
+  return canvas.toDataURL('image/png');
+}
+
+/* ================================================================
+   RETRO DRAWING HELPERS
+   ================================================================ */
+
+function drawChunkyBorder(ctx, x, y, w, h, thickness, color, innerThickness) {
   ctx.fillStyle = color;
-  const teeth = 40;
+  ctx.fillRect(x, y, w, thickness);
+  ctx.fillRect(x, y + h - thickness, w, thickness);
+  ctx.fillRect(x, y, thickness, h);
+  ctx.fillRect(x + w - thickness, y, thickness, h);
+
+  if (innerThickness) {
+    const inset = thickness + 10;
+    ctx.strokeStyle = THEME.greenMid;
+    ctx.lineWidth = innerThickness;
+    ctx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
+  }
+}
+
+function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
+  ctx.fillStyle = color;
+  // top-left big triangle
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + size, y);
+  ctx.lineTo(x, y + size);
+  ctx.closePath();
+  ctx.fill();
+  // inner highlight
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.moveTo(x + 24, y + 24);
+  ctx.lineTo(x + size * 0.55, y + 24);
+  ctx.lineTo(x + 24, y + size * 0.55);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = color;
+  // top-right
+  ctx.beginPath();
+  ctx.moveTo(x + w - size, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w, y + size);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.moveTo(x + w - 24, y + 24);
+  ctx.lineTo(x + w - size * 0.55, y + 24);
+  ctx.lineTo(x + w - 24, y + size * 0.55);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = color;
+  // bottom-left
+  ctx.beginPath();
+  ctx.moveTo(x, y + h - size);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x + size, y + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.moveTo(x + 24, y + h - 24);
+  ctx.lineTo(x + 24, y + h - size * 0.55);
+  ctx.lineTo(x + size * 0.55, y + h - 24);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = color;
+  // bottom-right
+  ctx.beginPath();
+  ctx.moveTo(x + w - size, y + h - size);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x + w - size, y + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.moveTo(x + w - 24, y + h - 24);
+  ctx.lineTo(x + w - 24, y + h - size * 0.55);
+  ctx.lineTo(x + w - size * 0.55, y + h - 24);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawZigZag(ctx, x, y, w, h, color, teeth) {
+  ctx.fillStyle = color;
   const toothW = w / teeth;
   ctx.beginPath();
-  ctx.moveTo(x, y + height);
+  ctx.moveTo(x, y + h);
   for (let i = 0; i < teeth; i++) {
     const px = x + i * toothW;
     ctx.lineTo(px + toothW / 2, y);
-    ctx.lineTo(px + toothW, y + height);
+    ctx.lineTo(px + toothW, y + h);
   }
-  ctx.lineTo(x + w, y + height);
+  ctx.lineTo(x + w, y + h);
   ctx.closePath();
   ctx.fill();
 }
 
-/* Footer: dark green block with cream badge + tagline + date + barcode */
-function drawFooterPanel(ctx, x, y, w, h) {
-  // Solid dark green
-  ctx.fillStyle = THEME.greenDark;
-  ctx.fillRect(x, y, w, h);
+function drawMemphisBackdrop(ctx, x, y, w, h) {
+  // Scattered memphis shapes in the pale field, avoiding the header/photo area.
+  ctx.save();
+  ctx.globalAlpha = 0.35;
 
-  // Cream dashed top edge
-  ctx.strokeStyle = THEME.cream;
+  // outline circles
+  ctx.strokeStyle = THEME.greenMid;
   ctx.lineWidth = 3;
-  ctx.setLineDash([10, 6]);
-  ctx.beginPath();
-  ctx.moveTo(x + 20, y + 10);
-  ctx.lineTo(x + w - 20, y + 10);
-  ctx.stroke();
-  ctx.setLineDash([]);
 
+  const circles = [
+    [90, h - 140, 34],
+    [w - 100, 120, 28],
+    [w - 140, h - 200, 22]
+  ];
+  circles.forEach(([cx, cy, r]) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  // small filled squares (rotated)
+  ctx.fillStyle = THEME.greenMid;
+  const squares = [
+    [70, 160, 14, 20],
+    [w - 80, h - 130, 16, -12]
+  ];
+  squares.forEach(([sx, sy, s, rot]) => {
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate((rot * Math.PI) / 180);
+    ctx.fillRect(-s / 2, -s / 2, s, s);
+    ctx.restore();
+  });
+
+  // tiny dots
+  const dots = [
+    [120, h - 260],
+    [w - 120, 220],
+    [w - 60, h - 300]
+  ];
+  dots.forEach(([dx, dy]) => {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+function drawMemphisDots(ctx, x, y, w, h) {
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = THEME.white;
+
+  // scattered dots inside header
+  const pts = [
+    [x + w * 0.08, y + h * 0.30],
+    [x + w * 0.14, y + h * 0.72],
+    [x + w * 0.22, y + h * 0.18],
+    [x + w * 0.80, y + h * 0.28],
+    [x + w * 0.88, y + h * 0.68],
+    [x + w * 0.92, y + h * 0.35],
+    [x + w * 0.74, y + h * 0.80]
+  ];
+  pts.forEach(([px, py]) => {
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // small triangle
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.10, y + h * 0.50);
+  ctx.lineTo(x + w * 0.14, y + h * 0.44);
+  ctx.lineTo(x + w * 0.14, y + h * 0.56);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.90, y + h * 0.55);
+  ctx.lineTo(x + w * 0.86, y + h * 0.48);
+  ctx.lineTo(x + w * 0.86, y + h * 0.62);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   const cx = x + w / 2;
 
-  // Stamp badge — cream box with green text
-  const stampText = `TEACHERS DAY  /  NO. ${new Date().getFullYear()}`;
-  ctx.font = '900 22px "Courier New", monospace';
-  const sw = ctx.measureText(stampText).width + 44;
-  const sh = 44;
-  const sy = y + 30;
+  // Eyebrow — small tag
+  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
+  const eW = ctx.measureText(eyebrow).width;
+  const tagW = eW + 44;
+  const tagH = 44;
+  const tagX = cx - tagW / 2;
+  const tagY = y + 22;
 
-  ctx.fillStyle = THEME.cream;
-  ctx.fillRect(cx - sw / 2, sy, sw, sh);
-
-  ctx.fillStyle = THEME.greenDark;
+  ctx.fillStyle = THEME.greenLight;
+  ctx.fillRect(tagX, tagY, tagW, tagH);
+  ctx.fillStyle = THEME.green;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(stampText, cx, sy + sh / 2 + 1);
+  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
+  ctx.fillText(eyebrow, cx, tagY + tagH / 2 + 1);
 
-  // Tagline
-  ctx.font = 'italic 900 52px "Trebuchet MS", "Arial Black", sans-serif';
-  ctx.fillStyle = THEME.cream;
-  ctx.fillText(TAGLINE, cx, sy + sh + 60);
+  // Title — auto-split into 2 lines if long
+  const lines = fitTitleLines(ctx, title, w - 120, 68);
+  const lineHeight = 78;
+  const totalH = lines.length * lineHeight;
+  const startY = y + h / 2 - totalH / 2 + 24;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  lines.forEach((line, i) => {
+    const ly = startY + i * lineHeight + lineHeight / 2;
+
+    // Stroke
+    ctx.font = `900 68px "Trebuchet MS", sans-serif`;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = THEME.greenMid;
+    ctx.strokeText(line, cx, ly);
+
+    // Hard shadow
+    ctx.fillStyle = THEME.greenMid;
+    ctx.fillText(line, cx + 5, ly + 5);
+
+    // Fill
+    ctx.fillStyle = THEME.white;
+    ctx.fillText(line, cx, ly);
+  });
+
+  // Subtitle
+  ctx.fillStyle = THEME.greenLight;
+  ctx.font = `bold 24px "Trebuchet MS", sans-serif`;
+  ctx.fillText(subtitle, cx, y + h - 40);
+}
+
+function fitTitleLines(ctx, text, maxWidth, fontSize) {
+  ctx.font = `900 ${fontSize}px "Trebuchet MS", sans-serif`;
+  if (ctx.measureText(text).width <= maxWidth) return [text];
+
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+
+  return lines.slice(0, 3);
+}
+
+function drawRetroFooter(ctx, x, y, w, h) {
+  const cx = x + w / 2;
+
+  // Badge — bold outlined rectangle (rotated slightly)
+  ctx.save();
+  ctx.translate(cx, y + 52);
+  ctx.rotate(-1.5 * Math.PI / 180);
+
+  const badgeText = `TEACHERS DAY '95  /  NO. ${new Date().getFullYear()}`;
+  ctx.font = `900 22px "Courier New", monospace`;
+  const bw = ctx.measureText(badgeText).width + 44;
+  const bh = 46;
+
+  ctx.fillStyle = THEME.greenLight;
+  ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+
+  ctx.strokeStyle = THEME.green;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(-bw / 2, -bh / 2, bw, bh);
+
+  ctx.fillStyle = THEME.green;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(badgeText, 0, 1);
+
+  ctx.restore();
+
+  // Tagline — "Teacher, Ikaw naman." in bold italic
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const tagY = y + h / 2 + 24;
+
+  ctx.font = `italic 900 52px "Trebuchet MS", sans-serif`;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = THEME.greenMid;
+  ctx.strokeText(TAGLINE, cx, tagY);
+
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillText(TAGLINE, cx + 4, tagY + 4);
+
+  ctx.fillStyle = THEME.white;
+  ctx.fillText(TAGLINE, cx, tagY);
 
   // Date
-  ctx.font = 'bold 20px "Courier New", monospace';
   ctx.fillStyle = THEME.greenLight;
+  ctx.font = `bold 24px "Courier New", monospace`;
   ctx.fillText(
     new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
     cx,
     y + h - 30
   );
 
-  // Barcode (bottom left)
-  drawBarcode(ctx, x + 20, y + h - 30, 200, 12, THEME.cream);
+  // Retro barcode strip
+  drawBarcode(ctx, x + 30, y + h - 16, 180, 10);
 }
 
-function drawBarcode(ctx, x, y, w, h, color) {
-  ctx.fillStyle = color;
+function drawBarcode(ctx, x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = THEME.greenLight;
   const bars = [4, 2, 6, 2, 3, 5, 2, 4, 6, 3, 2, 5, 4, 2, 6, 3, 2, 4, 5, 3, 2, 6];
   let cx = x;
   let i = 0;
@@ -450,155 +784,58 @@ function drawBarcode(ctx, x, y, w, h, color) {
     cx += bw + 3;
     i++;
   }
+  ctx.restore();
 }
 
-/* Small cream number tag for photo corners */
 function drawNumberTag(ctx, x, y, text) {
-  ctx.font = '900 22px "Courier New", monospace';
-  const pad = 14;
-  const tw = ctx.measureText(text).width;
-  const bw = tw + pad * 2;
-  const bh = 40;
+  ctx.font = `900 24px "Courier New", monospace`;
+  const padding = 16;
+  const textW = ctx.measureText(text).width;
+  const boxW = textW + padding * 2;
+  const boxH = 44;
 
-  ctx.fillStyle = THEME.cream;
-  ctx.fillRect(x, y, bw, bh);
+  // shadow
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(x + 4, y + 4, boxW, boxH);
 
-  ctx.fillStyle = THEME.greenDark;
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(x, y, boxW, boxH);
+
+  ctx.strokeStyle = THEME.white;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x, y, boxW, boxH);
+
+  ctx.fillStyle = THEME.white;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x + bw / 2, y + bh / 2 + 1);
+  ctx.fillText(text, x + boxW / 2, y + boxH / 2 + 1);
 }
 
-/* ================================================================
-   FUN STRIP
-   ================================================================ */
-async function generateFunStrip(imgs) {
-  const W = 1200;
-  const PAD = 70;
-  const GAP = 46;
-  const PHOTO_SIZE = W - PAD * 2;
-  const FOOTER_H = 240;
-  const HEADER_H = 320;
-  const FRAME = 16; // outer frame thickness
+function drawStickerTag(ctx, x, y, text, rotateDeg) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate((rotateDeg * Math.PI) / 180);
 
-  const H = FRAME + HEADER_H + 30 + (PHOTO_SIZE * 3) + (GAP * 2) + 30 + FOOTER_H + FRAME;
+  ctx.font = `900 22px "Courier New", monospace`;
+  const padding = 18;
+  const textW = ctx.measureText(text).width;
+  const boxW = textW + padding * 2;
+  const boxH = 44;
 
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = THEME.white;
+  ctx.fillRect(-4, -4, boxW + 8, boxH + 8);
 
-  // Striped background (the whole canvas)
-  fillStripedBackground(ctx, W, H, THEME.greenDark, THEME.greenMid, 40);
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(0, 0, boxW, boxH);
 
-  // Outer decorative frame
-  drawOuterFrame(ctx, W, H);
+  ctx.fillStyle = THEME.white;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, boxW / 2, boxH / 2 + 1);
 
-  // Header panel
-  drawHeaderPanel(ctx, PAD, FRAME + 30, W - PAD * 2, HEADER_H, {
-    tag: 'TEACHERS DAY',
-    title: 'HAPPY TEACHERS DAY',
-    subtitle: 'SMILE, YOU LOOK GREAT TODAY'
-  });
-
-  // Zig-zag divider under header
-  drawZigZagDivider(ctx, PAD, FRAME + 30 + HEADER_H, W - PAD * 2, 20, THEME.greenDark);
-
-  // Photos
-  const photosStartY = FRAME + 30 + HEADER_H + 50;
-
-  for (let i = 0; i < 3; i++) {
-    const y = photosStartY + i * (PHOTO_SIZE + GAP);
-
-    // Cream outer frame around photo (with green inner line)
-    ctx.fillStyle = THEME.cream;
-    ctx.fillRect(PAD - 12, y - 12, PHOTO_SIZE + 24, PHOTO_SIZE + 24);
-
-    ctx.fillStyle = THEME.greenDark;
-    ctx.fillRect(PAD - 6, y - 6, PHOTO_SIZE + 12, PHOTO_SIZE + 12);
-
-    // Photo
-    const img = await loadImage(imgs[i]);
-    ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
-
-    // Number tag
-    drawNumberTag(ctx, PAD + 16, y + 16, String(i + 1).padStart(2, '0'));
-  }
-
-  // Zig-zag divider above footer
-  const footerY = H - FRAME - FOOTER_H;
-  drawZigZagDivider(ctx, PAD, footerY - 20, W - PAD * 2, 20, THEME.greenDark);
-
-  // Footer panel
-  drawFooterPanel(ctx, PAD, footerY, W - PAD * 2, FOOTER_H);
-
-  return canvas.toDataURL('image/png');
+  ctx.restore();
 }
 
-/* ================================================================
-   DEPARTMENT IMAGE
-   ================================================================ */
-async function generateDepartmentImage(imgSrc, departmentName) {
-  const W = 1800;
-  const H = 1200;
-  const PAD = 70;
-  const FRAME = 16;
-  const HEADER_H = 260;
-  const FOOTER_H = 220;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  // Striped background
-  fillStripedBackground(ctx, W, H, THEME.greenDark, THEME.greenMid, 46);
-
-  // Outer frame
-  drawOuterFrame(ctx, W, H);
-
-  // Header panel
-  const dept = (departmentName && departmentName.trim()) || 'DEPARTMENT';
-  drawHeaderPanel(ctx, PAD, FRAME + 30, W - PAD * 2, HEADER_H, {
-    tag: 'TEACHERS DAY',
-    title: dept.toUpperCase(),
-    subtitle: 'ONE TEAM. ONE FAMILY.'
-  });
-
-  // Zig-zag divider under header
-  drawZigZagDivider(ctx, PAD, FRAME + 30 + HEADER_H, W - PAD * 2, 22, THEME.greenDark);
-
-  // Photo area
-  const photoY = FRAME + 30 + HEADER_H + 60;
-  const photoH = H - photoY - FOOTER_H - 60;
-  const photoX = PAD;
-  const photoW = W - PAD * 2;
-
-  // Cream outer frame
-  ctx.fillStyle = THEME.cream;
-  ctx.fillRect(photoX - 12, photoY - 12, photoW + 24, photoH + 24);
-
-  // Green inner line
-  ctx.fillStyle = THEME.greenDark;
-  ctx.fillRect(photoX - 6, photoY - 6, photoW + 12, photoH + 12);
-
-  const img = await loadImage(imgSrc);
-  drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
-
-  // Number tag
-  drawNumberTag(ctx, photoX + 20, photoY + 20, '01');
-
-  // Zig-zag above footer
-  const footerY = H - FRAME - FOOTER_H;
-  drawZigZagDivider(ctx, PAD, footerY - 22, W - PAD * 2, 22, THEME.greenDark);
-
-  // Footer
-  drawFooterPanel(ctx, PAD, footerY, W - PAD * 2, FOOTER_H);
-
-  return canvas.toDataURL('image/png');
-}
-
-/* ---------- HELPERS ---------- */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
