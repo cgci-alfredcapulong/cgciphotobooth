@@ -147,10 +147,10 @@ retakeBtn.addEventListener('click', () => {
 /**
  * Capture the current video frame.
  * - Fun mode: square 1:1 (1200 x 1200)
- * - Department mode: landscape 3:2 (1800 x 1200) — matches template slot
+ * - Department mode: landscape 7:5 (1680 x 1200) — matches 5x7 print & template slot
  */
 function captureFrame() {
-  const targetW = mode === 'department' ? 1800 : 1200;
+  const targetW = mode === 'department' ? 1680 : 1200;
   const targetH = mode === 'department' ? 1200 : 1200;
 
   const canvas = document.createElement('canvas');
@@ -352,14 +352,15 @@ async function generateFunStrip(imgs) {
   return canvas.toDataURL('image/png');
 }
 
-/* ---------------- DEPARTMENT (framed, landscape) --------------- */
+/* ---------------- DEPARTMENT (framed, landscape 7:5) --------------- */
 async function generateDepartmentImage(imgSrc, departmentName) {
-  const W = 1800;
-  const H = 1350;
+  // 7:5 aspect = exactly 5x7 landscape at 300 DPI
+  const W = 2100;
+  const H = 1500;
 
-  const FRAME = 26;
+  const FRAME = 28;
   const FRAME_INNER = 4;
-  const CONTENT_PAD = 40;
+  const CONTENT_PAD = 44;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -388,7 +389,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
     matInset,
     W - matInset * 2,
     H - matInset * 2,
-    70,
+    80,
     THEME.green,
     THEME.greenMid
   );
@@ -400,7 +401,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const contentH = H - (matInset + CONTENT_PAD) * 2;
 
   /* ---------- HEADER (short, left-aligned) ---------- */
-  const HEADER_H = 96;
+  const HEADER_H = 104;
   const hx = contentX;
   const hy = contentY;
   const hw = contentW;
@@ -432,24 +433,24 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 18px "Trebuchet MS", sans-serif`;
-  ctx.fillText('TEACHERS DAY', hx + 32, hy + 26);
+  ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
+  ctx.fillText('TEACHERS DAY', hx + 36, hy + 28);
 
   ctx.fillStyle = THEME.white;
-  ctx.font = `900 46px "Trebuchet MS", sans-serif`;
-  const titleLines = fitTitleLines(ctx, dept.toUpperCase(), hw - 360, 46);
-  const titleLineH = 50;
-  const titleStartY = hy + 56 + (titleLines.length === 1 ? 10 : 0);
+  ctx.font = `900 50px "Trebuchet MS", sans-serif`;
+  const titleLines = fitTitleLines(ctx, dept.toUpperCase(), hw - 420, 50);
+  const titleLineH = 54;
+  const titleStartY = hy + 60 + (titleLines.length === 1 ? 10 : 0);
 
   titleLines.forEach((line, i) => {
-    ctx.fillText(line, hx + 32, titleStartY + i * titleLineH);
+    ctx.fillText(line, hx + 36, titleStartY + i * titleLineH);
   });
 
-  ctx.font = `italic 900 30px "Trebuchet MS", sans-serif`;
+  ctx.font = `italic 900 32px "Trebuchet MS", sans-serif`;
   const tagText = TAGLINE;
-  const tagW = ctx.measureText(tagText).width + 40;
-  const tagH = 56;
-  const tagX = hx + hw - tagW - 32;
+  const tagW = ctx.measureText(tagText).width + 44;
+  const tagH = 60;
+  const tagX = hx + hw - tagW - 36;
   const tagY = hy + (hh - tagH) / 2;
 
   ctx.fillStyle = THEME.greenLight;
@@ -464,7 +465,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.fillText(tagText, tagX + tagW / 2, tagY + tagH / 2 + 2);
 
   /* ---------- FOOTER (short, left + right aligned) ---------- */
-  const FOOTER_H = 80;
+  const FOOTER_H = 86;
   const fy = contentY + contentH - FOOTER_H;
 
   ctx.fillStyle = THEME.greenMid;
@@ -477,10 +478,10 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.textBaseline = 'middle';
 
   const badgeText = `NO. ${new Date().getFullYear()}`;
-  ctx.font = `900 22px "Courier New", monospace`;
-  const badgeW = ctx.measureText(badgeText).width + 40;
-  const badgeH = 40;
-  const badgeX = hx + 32;
+  ctx.font = `900 24px "Courier New", monospace`;
+  const badgeW = ctx.measureText(badgeText).width + 44;
+  const badgeH = 44;
+  const badgeX = hx + 36;
   const badgeY = fy + (FOOTER_H - 8 - badgeH) / 2;
 
   ctx.fillStyle = THEME.greenLight;
@@ -495,7 +496,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1);
 
   ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
+  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
   ctx.textAlign = 'center';
   ctx.fillText(
     'ONE TEAM. ONE FAMILY.',
@@ -504,26 +505,27 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   );
 
   ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 18px "Courier New", monospace`;
+  ctx.font = `bold 20px "Courier New", monospace`;
   ctx.textAlign = 'right';
   ctx.fillText(
     new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
-    hx + hw - 32,
+    hx + hw - 36,
     fy + (FOOTER_H - 8) / 2
   );
 
-  /* ---------- PHOTO (3:2 slot, matches capture) ---------- */
-  const slotTop = hy + hh + 24;
-  const slotBottom = fy - 24;
+  /* ---------- PHOTO (7:5 slot, matches capture & 5x7 print) ---------- */
+  const slotTop = hy + hh + 28;
+  const slotBottom = fy - 28;
   const slotMaxH = slotBottom - slotTop;
   const slotMaxW = contentW;
 
+  // Build the largest 7:5 rectangle that fits in available space
   let photoW = slotMaxW;
-  let photoH = photoW * 2 / 3;
+  let photoH = photoW * 5 / 7;
 
   if (photoH > slotMaxH) {
     photoH = slotMaxH;
-    photoW = photoH * 3 / 2;
+    photoW = photoH * 7 / 5;
   }
 
   const photoX = contentX + (contentW - photoW) / 2;
@@ -545,7 +547,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.lineWidth = 2;
   ctx.strokeRect(photoX, photoY, photoW, photoH);
 
-  drawStickerTag(ctx, photoX + 22, photoY + 22, 'PHOTO 01', -4);
+  drawStickerTag(ctx, photoX + 24, photoY + 24, 'PHOTO 01', -4);
 
   return canvas.toDataURL('image/png');
 }

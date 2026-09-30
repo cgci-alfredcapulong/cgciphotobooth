@@ -250,11 +250,11 @@ h1 {
   text-align: center;
   box-shadow: 4px 4px 0 #2d6a4f;
 }
+
 .camera-wrapper {
-  /* existing rules stay */
   transition: aspect-ratio 0.3s ease;
 }
 
 .camera-wrapper.landscape {
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 7 / 5;
 }
