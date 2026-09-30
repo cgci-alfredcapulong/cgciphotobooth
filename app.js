@@ -26,12 +26,19 @@ let photos = [];
 let facingMode = 'user';
 
 const THEME = {
-  green: '#1a4d2e',
-  greenMid: '#2d6a4f',
-  greenLight: '#d4e8db',
-  greenPale: '#e8f3ec',
-  white: '#ffffff'
+  cream:      '#f5efd0',
+  mint:       '#a8d5c8',
+  teal:       '#1e4d4a',
+  coral:      '#e85c4a',
+  peach:      '#f4a261',
+  gold:       '#e8a83c',
+  orange:     '#e8862b',
+  pink:       '#e85c8a',
+  blue:       '#4a9fd8',
+  black:      '#1a1a1a'
 };
+
+const TAGLINE = "Teacher, Ikaw Naman!";
 
 if (typeof DEPARTMENTS !== 'undefined') {
   DEPARTMENTS.forEach(d => {
@@ -64,7 +71,7 @@ modeSwitcher.addEventListener('click', (e) => {
     headerSubtitle.textContent = 'One for the whole team';
   } else {
     headerTitle.textContent = 'Teachers Day Photobooth';
-    headerSubtitle.textContent = 'Est. 1995 / Smile, you look great today';
+    headerSubtitle.textContent = "Est. 1995 / Teacher, Ikaw Naman!";
   }
 });
 
@@ -215,142 +222,160 @@ function triggerDownload(dataUrl, mode) {
 }
 
 /* ================================================================
-   IMAGE GENERATION - 90's THEME
+   IMAGE GENERATION - 90's RETRO THEME
    ================================================================ */
 
-const TAGLINE = 'Teacher, Ikaw naman.';
-
-/**
- * FUN SHOTS - vertical 3-photo strip
- */
 async function generateFunStrip(imgs) {
   const W = 1200;
-  const HEADER_H = 360;
-  const FOOTER_H = 260;
-  const PAD = 60;
-  const GAP = 48;
+  const HEADER_H = 460;
+  const FOOTER_H = 320;
+  const PAD = 70;
+  const GAP = 50;
   const PHOTO_SIZE = W - PAD * 2;
-  const H = HEADER_H + PAD / 2 + (PHOTO_SIZE * 3) + (GAP * 2) + FOOTER_H + PAD;
+  const H = HEADER_H + (PHOTO_SIZE * 3) + (GAP * 2) + FOOTER_H + 60;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // White base
-  ctx.fillStyle = THEME.white;
+  /* ---------- BACKGROUND: cream with sunburst header ---------- */
+  ctx.fillStyle = THEME.cream;
   ctx.fillRect(0, 0, W, H);
 
-  // Pale green inner field (retro paper feel)
-  ctx.fillStyle = THEME.greenPale;
-  ctx.fillRect(20, 20, W - 40, H - 40);
+  // Sunburst behind header (radiating from bottom-center of header)
+  drawSunburst(ctx, W / 2, HEADER_H + 60, W * 1.1, HEADER_H + 120, [
+    THEME.coral, THEME.peach, THEME.cream, THEME.mint
+  ], 18);
 
-  // Chunky outer border
-  drawChunkyBorder(ctx, 0, 0, W, H, 22, THEME.green, 5);
+  // Bottom mint strip behind footer
+  ctx.fillStyle = THEME.mint;
+  ctx.fillRect(0, H - FOOTER_H, W, FOOTER_H);
 
-  // Memphis decorations in the white margin
-  drawMemphisBackdrop(ctx, 0, 0, W, H);
+  // Right-side halftone dots (mint area)
+  drawHalftone(ctx, W - 180, H - 180, 140, THEME.teal, 0.15);
 
-  // Corner triangles (chunky, two-tone)
-  drawCornerAccents(ctx, 0, 0, W, H, 110, THEME.green, THEME.greenMid);
+  /* ---------- VINYL RECORDS ---------- */
+  drawVinyl(ctx, 130, HEADER_H - 40, 90, THEME.black, THEME.pink);
+  drawVinyl(ctx, W - 130, HEADER_H - 40, 90, THEME.black, THEME.blue);
 
-  /* ---------- HEADER ---------- */
-  const hx = 50, hy = 50, hw = W - 100, hh = HEADER_H - 70;
+  /* ---------- HEADER TITLE ---------- */
+  const cx = W / 2;
 
-  // Header hard shadow
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(hx + 16, hy + 16, hw, hh);
+  // Title — bold outlined 90's font, split into lines
+  const titleLines = ['TEACHER\'S DAY', 'CELEBRATION'];
+  const titleFont = '900 108px "Trebuchet MS", "Arial Black", sans-serif';
+  ctx.font = titleFont;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-  // Header block
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(hx, hy, hw, hh);
+  const lineHeight = 120;
+  const titleStartY = HEADER_H / 2 - 40;
 
-  // Diagonal stripe band behind title
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(hx, hy, hw, hh);
-  ctx.clip();
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 6;
-  for (let i = -hh; i < hw + hh; i += 26) {
-    ctx.beginPath();
-    ctx.moveTo(hx + i, hy);
-    ctx.lineTo(hx + i + hh, hy + hh);
-    ctx.stroke();
-  }
-  ctx.restore();
+  titleLines.forEach((line, i) => {
+    const ly = titleStartY + i * lineHeight;
 
-  // Memphis dots inside header
-  drawMemphisDots(ctx, hx, hy, hw, hh);
+    // Gold outer stroke (the sticker outline)
+    ctx.lineJoin = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 22;
+    ctx.strokeStyle = THEME.gold;
+    ctx.strokeText(line, cx, ly);
 
-  // Header text
-  drawRetroHeader(ctx, hx, hy, hw, hh, {
-    eyebrow: "TEACHERS DAY",
-    title: 'HAPPY TEACHERS DAY',
-    subtitle: 'SMILE, YOU LOOK GREAT TODAY'
+    // Dark teal fill
+    ctx.fillStyle = THEME.teal;
+    ctx.fillText(line, cx, ly);
   });
 
-  // Zig-zag under header (chunky)
-  drawZigZag(ctx, hx, hy + hh, hw, 22, THEME.green, 26);
+  /* ---------- TAGLINE RIBBON ---------- */
+  const tagY = HEADER_H - 20;
+
+  ctx.font = 'italic 900 84px "Trebuchet MS", "Arial Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Cream shadow behind tagline (the ribbon-ish plate)
+  const tagText = TAGLINE;
+  const tagWidth = ctx.measureText(tagText).width;
+  ctx.fillStyle = 'rgba(245, 239, 208, 0.85)';
+  ctx.fillRect(cx - tagWidth / 2 - 20, tagY - 55, tagWidth + 40, 110);
+
+  // Gold stroke
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = THEME.gold;
+  ctx.strokeText(tagText, cx, tagY);
+
+  // Orange fill
+  ctx.fillStyle = THEME.orange;
+  ctx.fillText(tagText, cx, tagY);
 
   /* ---------- PHOTOS ---------- */
-  const startY = HEADER_H + 10;
+  const photosStartY = HEADER_H + 30;
 
   for (let i = 0; i < 3; i++) {
-    const y = startY + i * (PHOTO_SIZE + GAP);
+    const y = photosStartY + i * (PHOTO_SIZE + GAP);
     const img = await loadImage(imgs[i]);
 
-    // Sticker shadow
-    ctx.fillStyle = THEME.greenLight;
-    ctx.fillRect(PAD + 16, y + 16, PHOTO_SIZE, PHOTO_SIZE);
+    // Coral shadow offset (sticker effect)
+    ctx.fillStyle = THEME.coral;
+    ctx.fillRect(PAD + 14, y + 14, PHOTO_SIZE, PHOTO_SIZE);
 
-    // Frame outer
-    ctx.fillStyle = THEME.green;
-    ctx.fillRect(PAD - 10, y - 10, PHOTO_SIZE + 20, PHOTO_SIZE + 20);
+    // Teal frame
+    ctx.fillStyle = THEME.teal;
+    ctx.fillRect(PAD - 12, y - 12, PHOTO_SIZE + 24, PHOTO_SIZE + 24);
 
-    // Frame inner (white gutter)
-    ctx.fillStyle = THEME.white;
-    ctx.fillRect(PAD - 4, y - 4, PHOTO_SIZE + 8, PHOTO_SIZE + 8);
+    // Cream inner gutter
+    ctx.fillStyle = THEME.cream;
+    ctx.fillRect(PAD - 6, y - 6, PHOTO_SIZE + 12, PHOTO_SIZE + 12);
 
     // Photo
     ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
-    // Thin inner green line
-    ctx.strokeStyle = THEME.green;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(PAD, y, PHOTO_SIZE, PHOTO_SIZE);
-
-    // Number tag
-    drawNumberTag(ctx, PAD + 10, y + 10, String(i + 1).padStart(2, '0'));
+    // Number tag — vinyl-style circle
+    drawVinylTag(ctx, PAD + 50, y + 50, 44, String(i + 1).padStart(2, '0'));
   }
 
-  /* ---------- FOOTER ---------- */
-  const fy = H - FOOTER_H - 10;
+  /* ---------- BOOMBOX / CASSETTE in footer ---------- */
+  drawBoombox(ctx, 90, H - FOOTER_H + 60, 240, 150);
+  drawCassette(ctx, W - 330, H - FOOTER_H + 80, 240, 130);
 
-  // Zig-zag above footer
-  drawZigZag(ctx, 50, fy - 22, W - 100, 22, THEME.green, 26);
+  // Footer text
+  const footerTextY = H - FOOTER_H / 2 + 10;
 
-  // Footer block shadow
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(66, fy + 16, W - 132, FOOTER_H - 60);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-  // Footer block
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(50, fy, W - 100, FOOTER_H - 60);
+  // Small tag
+  ctx.font = '900 22px "Courier New", monospace';
+  const stampText = `TEACHERS DAY '95  /  NO. ${new Date().getFullYear()}`;
+  const sw = ctx.measureText(stampText).width + 44;
+  const sh = 46;
+  const sx2 = cx - sw / 2;
+  const sy2 = H - FOOTER_H + 30;
 
-  drawRetroFooter(ctx, 50, fy, W - 100, FOOTER_H - 60);
+  ctx.fillStyle = THEME.teal;
+  ctx.fillRect(sx2, sy2, sw, sh);
+  ctx.fillStyle = THEME.cream;
+  ctx.fillText(stampText, cx, sy2 + sh / 2 + 1);
+
+  // Date
+  ctx.fillStyle = THEME.teal;
+  ctx.font = 'bold 24px "Courier New", monospace';
+  ctx.fillText(
+    new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
+    cx,
+    H - 40
+  );
 
   return canvas.toDataURL('image/png');
 }
 
-/**
- * DEPARTMENT - single landscape photo
- */
 async function generateDepartmentImage(imgSrc, departmentName) {
   const W = 1800;
   const H = 1350;
   const PAD = 70;
-  const HEADER_H = 300;
+  const HEADER_H = 380;
   const FOOTER_H = 260;
 
   const canvas = document.createElement('canvas');
@@ -358,482 +383,412 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // White base
-  ctx.fillStyle = THEME.white;
+  /* ---------- BACKGROUND ---------- */
+  ctx.fillStyle = THEME.cream;
   ctx.fillRect(0, 0, W, H);
 
-  // Pale inner field
-  ctx.fillStyle = THEME.greenPale;
-  ctx.fillRect(24, 24, W - 48, H - 48);
+  // Sunburst behind header
+  drawSunburst(ctx, W / 2, HEADER_H + 60, W * 0.9, HEADER_H + 100, [
+    THEME.coral, THEME.peach, THEME.cream, THEME.mint
+  ], 24);
 
-  // Chunky outer border
-  drawChunkyBorder(ctx, 0, 0, W, H, 26, THEME.green, 6);
+  // Mint strip behind footer
+  ctx.fillStyle = THEME.mint;
+  ctx.fillRect(0, H - FOOTER_H, W, FOOTER_H);
 
-  // Memphis decorations
-  drawMemphisBackdrop(ctx, 0, 0, W, H);
+  // Halftone dots
+  drawHalftone(ctx, W - 260, H - 220, 200, THEME.teal, 0.18);
+  drawHalftone(ctx, 260, H - 220, 200, THEME.teal, 0.12);
 
-  // Corner triangles
-  drawCornerAccents(ctx, 0, 0, W, H, 150, THEME.green, THEME.greenMid);
+  /* ---------- VINYL RECORDS ---------- */
+  drawVinyl(ctx, 180, HEADER_H - 60, 110, THEME.black, THEME.pink);
+  drawVinyl(ctx, W - 180, HEADER_H - 60, 110, THEME.black, THEME.blue);
 
-  /* ---------- HEADER ---------- */
-  const hx = 60, hy = 60, hw = W - 120, hh = HEADER_H - 80;
+  /* ---------- HEADER TITLE ---------- */
+  const cx = W / 2;
 
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(hx + 18, hy + 18, hw, hh);
+  const titleFont = '900 130px "Trebuchet MS", "Arial Black", sans-serif';
+  ctx.font = titleFont;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(hx, hy, hw, hh);
+  const titleLines = ['TEACHER\'S DAY', 'CELEBRATION'];
+  const lineHeight = 145;
+  const titleStartY = HEADER_H / 2 - 40;
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(hx, hy, hw, hh);
-  ctx.clip();
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 8;
-  for (let i = -hh; i < hw + hh; i += 32) {
-    ctx.beginPath();
-    ctx.moveTo(hx + i, hy);
-    ctx.lineTo(hx + i + hh, hy + hh);
-    ctx.stroke();
-  }
-  ctx.restore();
+  titleLines.forEach((line, i) => {
+    const ly = titleStartY + i * lineHeight;
 
-  drawMemphisDots(ctx, hx, hy, hw, hh);
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 26;
+    ctx.strokeStyle = THEME.gold;
+    ctx.strokeText(line, cx, ly);
 
-  const dept = (departmentName && departmentName.trim()) || 'Department';
-  drawRetroHeader(ctx, hx, hy, hw, hh, {
-    eyebrow: "TEACHERS DAY '95",
-    title: dept.toUpperCase(),
-    subtitle: 'ONE TEAM. ONE FAMILY.'
+    ctx.fillStyle = THEME.teal;
+    ctx.fillText(line, cx, ly);
   });
 
-  drawZigZag(ctx, hx, hy + hh, hw, 24, THEME.green, 34);
+  /* ---------- TAGLINE ---------- */
+  const tagY = HEADER_H - 20;
+  ctx.font = 'italic 900 96px "Trebuchet MS", "Arial Black", sans-serif';
+
+  const tagWidth = ctx.measureText(TAGLINE).width;
+  ctx.fillStyle = 'rgba(245, 239, 208, 0.85)';
+  ctx.fillRect(cx - tagWidth / 2 - 24, tagY - 60, tagWidth + 48, 120);
+
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 16;
+  ctx.strokeStyle = THEME.gold;
+  ctx.strokeText(TAGLINE, cx, tagY);
+
+  ctx.fillStyle = THEME.orange;
+  ctx.fillText(TAGLINE, cx, tagY);
+
+  /* ---------- DEPARTMENT LABEL BADGE ---------- */
+  const badgeY = HEADER_H + 60;
+  ctx.font = '900 44px "Trebuchet MS", "Arial Black", sans-serif';
+  const dept = (departmentName && departmentName.trim()) || 'DEPARTMENT';
+  const badgeText = dept.toUpperCase();
+  const bw = ctx.measureText(badgeText).width + 80;
+  const bh = 76;
+
+  // Coral shadow
+  ctx.fillStyle = THEME.coral;
+  ctx.fillRect(cx - bw / 2 + 10, badgeY + 10, bw, bh);
+
+  // Teal badge
+  ctx.fillStyle = THEME.teal;
+  ctx.fillRect(cx - bw / 2, badgeY, bw, bh);
+
+  ctx.fillStyle = THEME.cream;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(badgeText, cx, badgeY + bh / 2 + 2);
 
   /* ---------- PHOTO ---------- */
-  const photoY = hy + hh + 70;
-  const photoH = H - photoY - FOOTER_H - 60;
+  const photoY = badgeY + bh + 40;
+  const photoH = H - photoY - FOOTER_H - 40;
   const photoX = PAD;
   const photoW = W - PAD * 2;
 
-  ctx.fillStyle = THEME.greenLight;
-  ctx.fillRect(photoX + 20, photoY + 20, photoW, photoH);
+  ctx.fillStyle = THEME.coral;
+  ctx.fillRect(photoX + 18, photoY + 18, photoW, photoH);
 
-  ctx.fillStyle = THEME.green;
+  ctx.fillStyle = THEME.teal;
   ctx.fillRect(photoX - 14, photoY - 14, photoW + 28, photoH + 28);
 
-  ctx.fillStyle = THEME.white;
+  ctx.fillStyle = THEME.cream;
   ctx.fillRect(photoX - 6, photoY - 6, photoW + 12, photoH + 12);
 
   const img = await loadImage(imgSrc);
   drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
 
-  ctx.strokeStyle = THEME.green;
-  ctx.lineWidth = 4;
-  ctx.strokeRect(photoX, photoY, photoW, photoH);
-
-  // Corner "photo" sticker tag
-  drawStickerTag(ctx, photoX + 24, photoY + 24, `PHOTO 01`, -4);
+  // Vinyl tag in corner of photo
+  drawVinylTag(ctx, photoX + 60, photoY + 60, 54, '01');
 
   /* ---------- FOOTER ---------- */
-  const fy = H - FOOTER_H;
+  drawBoombox(ctx, 120, H - FOOTER_H + 70, 260, 160);
+  drawCassette(ctx, W - 380, H - FOOTER_H + 90, 260, 140);
 
-  drawZigZag(ctx, 60, fy - 24, W - 120, 24, THEME.green, 34);
+  const footerTextY = H - FOOTER_H / 2 + 20;
 
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(78, fy + 18, W - 156, FOOTER_H - 80);
+  ctx.font = '900 26px "Courier New", monospace';
+  const stampText = `TEACHERS DAY '95  /  NO. ${new Date().getFullYear()}`;
+  const sw = ctx.measureText(stampText).width + 50;
+  const sh = 52;
+  const sx2 = cx - sw / 2;
+  const sy2 = H - FOOTER_H + 30;
 
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(60, fy, W - 120, FOOTER_H - 80);
+  ctx.fillStyle = THEME.teal;
+  ctx.fillRect(sx2, sy2, sw, sh);
+  ctx.fillStyle = THEME.cream;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 26px "Courier New", monospace';
+  ctx.fillText(stampText, cx, sy2 + sh / 2 + 2);
 
-  drawRetroFooter(ctx, 60, fy, W - 120, FOOTER_H - 80);
+  ctx.fillStyle = THEME.teal;
+  ctx.font = 'bold 26px "Courier New", monospace';
+  ctx.fillText(
+    new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
+    cx,
+    H - 40
+  );
 
   return canvas.toDataURL('image/png');
 }
 
 /* ================================================================
-   RETRO DRAWING HELPERS
+   90's RETRO DRAWING PRIMITIVES
    ================================================================ */
 
-function drawChunkyBorder(ctx, x, y, w, h, thickness, color, innerThickness) {
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, w, thickness);
-  ctx.fillRect(x, y + h - thickness, w, thickness);
-  ctx.fillRect(x, y, thickness, h);
-  ctx.fillRect(x + w - thickness, y, thickness, h);
-
-  if (innerThickness) {
-    const inset = thickness + 10;
-    ctx.strokeStyle = THEME.greenMid;
-    ctx.lineWidth = innerThickness;
-    ctx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
-  }
-}
-
-function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
-  ctx.fillStyle = color;
-  // top-left big triangle
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + size, y);
-  ctx.lineTo(x, y + size);
-  ctx.closePath();
-  ctx.fill();
-  // inner highlight
-  ctx.fillStyle = accentColor;
-  ctx.beginPath();
-  ctx.moveTo(x + 24, y + 24);
-  ctx.lineTo(x + size * 0.55, y + 24);
-  ctx.lineTo(x + 24, y + size * 0.55);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = color;
-  // top-right
-  ctx.beginPath();
-  ctx.moveTo(x + w - size, y);
-  ctx.lineTo(x + w, y);
-  ctx.lineTo(x + w, y + size);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = accentColor;
-  ctx.beginPath();
-  ctx.moveTo(x + w - 24, y + 24);
-  ctx.lineTo(x + w - size * 0.55, y + 24);
-  ctx.lineTo(x + w - 24, y + size * 0.55);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = color;
-  // bottom-left
-  ctx.beginPath();
-  ctx.moveTo(x, y + h - size);
-  ctx.lineTo(x, y + h);
-  ctx.lineTo(x + size, y + h);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = accentColor;
-  ctx.beginPath();
-  ctx.moveTo(x + 24, y + h - 24);
-  ctx.lineTo(x + 24, y + h - size * 0.55);
-  ctx.lineTo(x + size * 0.55, y + h - 24);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = color;
-  // bottom-right
-  ctx.beginPath();
-  ctx.moveTo(x + w - size, y + h - size);
-  ctx.lineTo(x + w, y + h);
-  ctx.lineTo(x + w - size, y + h);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = accentColor;
-  ctx.beginPath();
-  ctx.moveTo(x + w - 24, y + h - 24);
-  ctx.lineTo(x + w - 24, y + h - size * 0.55);
-  ctx.lineTo(x + w - size * 0.55, y + h - 24);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function drawZigZag(ctx, x, y, w, h, color, teeth) {
-  ctx.fillStyle = color;
-  const toothW = w / teeth;
-  ctx.beginPath();
-  ctx.moveTo(x, y + h);
-  for (let i = 0; i < teeth; i++) {
-    const px = x + i * toothW;
-    ctx.lineTo(px + toothW / 2, y);
-    ctx.lineTo(px + toothW, y + h);
-  }
-  ctx.lineTo(x + w, y + h);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function drawMemphisBackdrop(ctx, x, y, w, h) {
-  // Scattered memphis shapes in the pale field, avoiding the header/photo area.
+function drawSunburst(ctx, cx, cy, radius, maxRadius, colors, segments) {
   ctx.save();
-  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.rect(0, 0, ctx.canvas.width, cy + 60);
+  ctx.clip();
 
-  // outline circles
-  ctx.strokeStyle = THEME.greenMid;
-  ctx.lineWidth = 3;
+  const step = (Math.PI * 2) / segments;
+  for (let i = 0; i < segments; i++) {
+    const a0 = i * step;
+    const a1 = a0 + step;
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(
+      cx + Math.cos(a0) * maxRadius,
+      cy + Math.sin(a0) * maxRadius
+    );
+    ctx.lineTo(
+      cx + Math.cos(a1) * maxRadius,
+      cy + Math.sin(a1) * maxRadius
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
 
-  const circles = [
-    [90, h - 140, 34],
-    [w - 100, 120, 28],
-    [w - 140, h - 200, 22]
-  ];
-  circles.forEach(([cx, cy, r]) => {
+  ctx.restore();
+}
+
+function drawHalftone(ctx, cx, cy, radius, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+
+  const dotSpacing = 20;
+  for (let y = -radius; y <= radius; y += dotSpacing) {
+    for (let x = -radius; x <= radius; x += dotSpacing) {
+      const d = Math.sqrt(x * x + y * y);
+      if (d <= radius) {
+        const size = 2 + (1 - d / radius) * 4;
+        ctx.beginPath();
+        ctx.arc(cx + x, cy + y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawVinyl(ctx, cx, cy, radius, color, labelColor) {
+  // Outer disc
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner grooves
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  for (let r = radius * 0.35; r < radius * 0.92; r += 4) {
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.stroke();
-  });
+  }
 
-  // small filled squares (rotated)
-  ctx.fillStyle = THEME.greenMid;
-  const squares = [
-    [70, 160, 14, 20],
-    [w - 80, h - 130, 16, -12]
-  ];
-  squares.forEach(([sx, sy, s, rot]) => {
-    ctx.save();
-    ctx.translate(sx, sy);
-    ctx.rotate((rot * Math.PI) / 180);
-    ctx.fillRect(-s / 2, -s / 2, s, s);
-    ctx.restore();
-  });
+  // Label
+  ctx.fillStyle = labelColor;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.32, 0, Math.PI * 2);
+  ctx.fill();
 
-  // tiny dots
-  const dots = [
-    [120, h - 260],
-    [w - 120, 220],
-    [w - 60, h - 300]
-  ];
-  dots.forEach(([dx, dy]) => {
-    ctx.beginPath();
-    ctx.arc(dx, dy, 4, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  // Label inner ring
+  ctx.strokeStyle = THEME.cream;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.32, 0, Math.PI * 2);
+  ctx.stroke();
 
-  ctx.restore();
-}
+  // Center hole
+  ctx.fillStyle = THEME.cream;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.06, 0, Math.PI * 2);
+  ctx.fill();
 
-function drawMemphisDots(ctx, x, y, w, h) {
+  // Highlight streak
   ctx.save();
-  ctx.globalAlpha = 0.22;
-  ctx.fillStyle = THEME.white;
-
-  // scattered dots inside header
-  const pts = [
-    [x + w * 0.08, y + h * 0.30],
-    [x + w * 0.14, y + h * 0.72],
-    [x + w * 0.22, y + h * 0.18],
-    [x + w * 0.80, y + h * 0.28],
-    [x + w * 0.88, y + h * 0.68],
-    [x + w * 0.92, y + h * 0.35],
-    [x + w * 0.74, y + h * 0.80]
-  ];
-  pts.forEach(([px, py]) => {
-    ctx.beginPath();
-    ctx.arc(px, py, 6, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // small triangle
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.moveTo(x + w * 0.10, y + h * 0.50);
-  ctx.lineTo(x + w * 0.14, y + h * 0.44);
-  ctx.lineTo(x + w * 0.14, y + h * 0.56);
-  ctx.closePath();
+  ctx.arc(cx - radius * 0.3, cy - radius * 0.3, radius * 0.55, 0, Math.PI * 2);
   ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(x + w * 0.90, y + h * 0.55);
-  ctx.lineTo(x + w * 0.86, y + h * 0.48);
-  ctx.lineTo(x + w * 0.86, y + h * 0.62);
-  ctx.closePath();
-  ctx.fill();
-
   ctx.restore();
 }
 
-function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
-  const cx = x + w / 2;
+function drawVinylTag(ctx, cx, cy, radius, text) {
+  // Small vinyl-styled number badge
+  ctx.fillStyle = THEME.black;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Eyebrow — small tag
-  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
-  const eW = ctx.measureText(eyebrow).width;
-  const tagW = eW + 44;
-  const tagH = 44;
-  const tagX = cx - tagW / 2;
-  const tagY = y + 22;
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  for (let r = radius * 0.4; r < radius * 0.9; r += 3) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
-  ctx.fillStyle = THEME.greenLight;
-  ctx.fillRect(tagX, tagY, tagW, tagH);
-  ctx.fillStyle = THEME.green;
+  ctx.fillStyle = THEME.gold;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = THEME.teal;
+  ctx.font = `900 ${Math.floor(radius * 0.6)}px "Trebuchet MS", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
-  ctx.fillText(eyebrow, cx, tagY + tagH / 2 + 1);
+  ctx.fillText(text, cx, cy + 1);
 
-  // Title — auto-split into 2 lines if long
-  const lines = fitTitleLines(ctx, title, w - 120, 68);
-  const lineHeight = 78;
-  const totalH = lines.length * lineHeight;
-  const startY = y + h / 2 - totalH / 2 + 24;
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  lines.forEach((line, i) => {
-    const ly = startY + i * lineHeight + lineHeight / 2;
-
-    // Stroke
-    ctx.font = `900 68px "Trebuchet MS", sans-serif`;
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = THEME.greenMid;
-    ctx.strokeText(line, cx, ly);
-
-    // Hard shadow
-    ctx.fillStyle = THEME.greenMid;
-    ctx.fillText(line, cx + 5, ly + 5);
-
-    // Fill
-    ctx.fillStyle = THEME.white;
-    ctx.fillText(line, cx, ly);
-  });
-
-  // Subtitle
-  ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 24px "Trebuchet MS", sans-serif`;
-  ctx.fillText(subtitle, cx, y + h - 40);
+  ctx.fillStyle = THEME.black;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.08, 0, Math.PI * 2);
+  ctx.fill();
 }
 
-function fitTitleLines(ctx, text, maxWidth, fontSize) {
-  ctx.font = `900 ${fontSize}px "Trebuchet MS", sans-serif`;
-  if (ctx.measureText(text).width <= maxWidth) return [text];
+function drawBoombox(ctx, x, y, w, h) {
+  // Body
+  ctx.fillStyle = THEME.pink;
+  roundRect(ctx, x, y, w, h, 10);
+  ctx.fill();
 
-  const words = text.split(' ');
-  const lines = [];
-  let current = '';
+  // Teal border
+  ctx.strokeStyle = THEME.teal;
+  ctx.lineWidth = 5;
+  roundRect(ctx, x, y, w, h, 10);
+  ctx.stroke();
 
-  for (const word of words) {
-    const test = current ? current + ' ' + word : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = test;
+  // Handle
+  ctx.strokeStyle = THEME.teal;
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.2, y);
+  ctx.quadraticCurveTo(x + w / 2, y - 30, x + w * 0.8, y);
+  ctx.stroke();
+
+  // Speakers (left and right circles)
+  const spR = h * 0.32;
+  const spY = y + h * 0.55;
+
+  [x + w * 0.22, x + w * 0.78].forEach(spX => {
+    ctx.fillStyle = THEME.cream;
+    ctx.beginPath();
+    ctx.arc(spX, spY, spR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = THEME.teal;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(spX, spY, spR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = THEME.gold;
+    ctx.beginPath();
+    ctx.arc(spX, spY, spR * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = THEME.teal;
+    ctx.beginPath();
+    ctx.arc(spX, spY, spR * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Center cassette slot
+  const slotW = w * 0.3;
+  const slotH = h * 0.3;
+  const slotX = x + w / 2 - slotW / 2;
+  const slotY = y + h * 0.25;
+
+  ctx.fillStyle = THEME.teal;
+  ctx.fillRect(slotX, slotY, slotW, slotH);
+
+  ctx.fillStyle = THEME.cream;
+  ctx.fillRect(slotX + 6, slotY + 6, slotW - 12, slotH - 12);
+
+  // Buttons
+  const btnY = y + h * 0.82;
+  const btnCount = 5;
+  const btnW = w * 0.06;
+  const btnGap = (w * 0.4) / (btnCount - 1);
+  const btnsStartX = x + w / 2 - (w * 0.4) / 2;
+
+  const btnColors = [THEME.coral, THEME.gold, THEME.cream, THEME.blue, THEME.coral];
+  for (let i = 0; i < btnCount; i++) {
+    ctx.fillStyle = btnColors[i];
+    ctx.fillRect(btnsStartX + i * btnGap - btnW / 2, btnY, btnW, h * 0.08);
+  }
+}
+
+function drawCassette(ctx, x, y, w, h) {
+  // Body
+  ctx.fillStyle = THEME.blue;
+  roundRect(ctx, x, y, w, h, 8);
+  ctx.fill();
+
+  ctx.strokeStyle = THEME.teal;
+  ctx.lineWidth = 4;
+  roundRect(ctx, x, y, w, h, 8);
+  ctx.stroke();
+
+  // Top stripe
+  ctx.fillStyle = THEME.cream;
+  ctx.fillRect(x + 10, y + 10, w - 20, h * 0.18);
+
+  ctx.fillStyle = THEME.teal;
+  ctx.font = `900 ${Math.floor(h * 0.12)}px "Courier New", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('MIXTAPE  /  SIDE A', x + w / 2, y + 10 + h * 0.09);
+
+  // Reels
+  const reelR = h * 0.22;
+  const reelY = y + h * 0.62;
+
+  [x + w * 0.32, x + w * 0.68].forEach(reelX => {
+    ctx.fillStyle = THEME.cream;
+    ctx.beginPath();
+    ctx.arc(reelX, reelY, reelR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = THEME.teal;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(reelX, reelY, reelR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Spokes
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI * 2 / 6) * i;
+      ctx.beginPath();
+      ctx.moveTo(reelX, reelY);
+      ctx.lineTo(reelX + Math.cos(a) * reelR * 0.75, reelY + Math.sin(a) * reelR * 0.75);
+      ctx.stroke();
     }
-  }
-  if (current) lines.push(current);
 
-  return lines.slice(0, 3);
+    ctx.fillStyle = THEME.teal;
+    ctx.beginPath();
+    ctx.arc(reelX, reelY, reelR * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Window between reels
+  ctx.fillStyle = THEME.cream;
+  ctx.fillRect(x + w * 0.4, reelY - 4, w * 0.2, 8);
 }
 
-function drawRetroFooter(ctx, x, y, w, h) {
-  const cx = x + w / 2;
-
-  // Badge — bold outlined rectangle (rotated slightly)
-  ctx.save();
-  ctx.translate(cx, y + 52);
-  ctx.rotate(-1.5 * Math.PI / 180);
-
-  const badgeText = `TEACHERS DAY '95  /  NO. ${new Date().getFullYear()}`;
-  ctx.font = `900 22px "Courier New", monospace`;
-  const bw = ctx.measureText(badgeText).width + 44;
-  const bh = 46;
-
-  ctx.fillStyle = THEME.greenLight;
-  ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
-
-  ctx.strokeStyle = THEME.green;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(-bw / 2, -bh / 2, bw, bh);
-
-  ctx.fillStyle = THEME.green;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(badgeText, 0, 1);
-
-  ctx.restore();
-
-  // Tagline — "Teacher, Ikaw naman." in bold italic
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  const tagY = y + h / 2 + 24;
-
-  ctx.font = `italic 900 52px "Trebuchet MS", sans-serif`;
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = THEME.greenMid;
-  ctx.strokeText(TAGLINE, cx, tagY);
-
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillText(TAGLINE, cx + 4, tagY + 4);
-
-  ctx.fillStyle = THEME.white;
-  ctx.fillText(TAGLINE, cx, tagY);
-
-  // Date
-  ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 24px "Courier New", monospace`;
-  ctx.fillText(
-    new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
-    cx,
-    y + h - 30
-  );
-
-  // Retro barcode strip
-  drawBarcode(ctx, x + 30, y + h - 16, 180, 10);
-}
-
-function drawBarcode(ctx, x, y, w, h) {
-  ctx.save();
-  ctx.fillStyle = THEME.greenLight;
-  const bars = [4, 2, 6, 2, 3, 5, 2, 4, 6, 3, 2, 5, 4, 2, 6, 3, 2, 4, 5, 3, 2, 6];
-  let cx = x;
-  let i = 0;
-  while (cx < x + w) {
-    const bw = bars[i % bars.length];
-    ctx.fillRect(cx, y, bw, h);
-    cx += bw + 3;
-    i++;
-  }
-  ctx.restore();
-}
-
-function drawNumberTag(ctx, x, y, text) {
-  ctx.font = `900 24px "Courier New", monospace`;
-  const padding = 16;
-  const textW = ctx.measureText(text).width;
-  const boxW = textW + padding * 2;
-  const boxH = 44;
-
-  // shadow
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(x + 4, y + 4, boxW, boxH);
-
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(x, y, boxW, boxH);
-
-  ctx.strokeStyle = THEME.white;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(x, y, boxW, boxH);
-
-  ctx.fillStyle = THEME.white;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, x + boxW / 2, y + boxH / 2 + 1);
-}
-
-function drawStickerTag(ctx, x, y, text, rotateDeg) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate((rotateDeg * Math.PI) / 180);
-
-  ctx.font = `900 22px "Courier New", monospace`;
-  const padding = 18;
-  const textW = ctx.measureText(text).width;
-  const boxW = textW + padding * 2;
-  const boxH = 44;
-
-  ctx.fillStyle = THEME.white;
-  ctx.fillRect(-4, -4, boxW + 8, boxH + 8);
-
-  ctx.fillStyle = THEME.green;
-  ctx.fillRect(0, 0, boxW, boxH);
-
-  ctx.fillStyle = THEME.white;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, boxW / 2, boxH / 2 + 1);
-
-  ctx.restore();
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 function loadImage(src) {
