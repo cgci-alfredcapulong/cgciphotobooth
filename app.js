@@ -62,7 +62,6 @@ modeSwitcher.addEventListener('click', (e) => {
 
   deptPanel.style.display = mode === 'department' ? 'block' : 'none';
 
-  // Landscape preview in department mode
   if (cameraWrapper) {
     cameraWrapper.classList.toggle('landscape', mode === 'department');
   }
@@ -168,13 +167,11 @@ function captureFrame() {
   let sx, sy, sw, sh;
 
   if (videoRatio > targetRatio) {
-    // Video wider than target: crop sides
     sh = vh;
     sw = vh * targetRatio;
     sx = (vw - sw) / 2;
     sy = 0;
   } else {
-    // Video taller than target: crop top/bottom
     sw = vw;
     sh = vw / targetRatio;
     sx = 0;
@@ -269,21 +266,16 @@ async function generateFunStrip(imgs) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // White base
   ctx.fillStyle = THEME.white;
   ctx.fillRect(0, 0, W, H);
 
-  // Pale green inner field
   ctx.fillStyle = THEME.greenPale;
   ctx.fillRect(20, 20, W - 40, H - 40);
 
-  // Chunky outer border
   drawChunkyBorder(ctx, 0, 0, W, H, 22, THEME.green, 5);
 
-  // Memphis decorations
   drawMemphisBackdrop(ctx, 0, 0, W, H);
 
-  // Corner triangles
   drawCornerAccents(ctx, 0, 0, W, H, 110, THEME.green, THEME.greenMid);
 
   /* ---------- HEADER ---------- */
@@ -326,27 +318,21 @@ async function generateFunStrip(imgs) {
     const y = startY + i * (PHOTO_SIZE + GAP);
     const img = await loadImage(imgs[i]);
 
-    // Sticker shadow
     ctx.fillStyle = THEME.greenLight;
     ctx.fillRect(PAD + 12, y + 12, PHOTO_SIZE, PHOTO_SIZE);
 
-    // Frame outer
     ctx.fillStyle = THEME.green;
     ctx.fillRect(PAD - 8, y - 8, PHOTO_SIZE + 16, PHOTO_SIZE + 16);
 
-    // Frame inner (white gutter)
     ctx.fillStyle = THEME.white;
     ctx.fillRect(PAD - 3, y - 3, PHOTO_SIZE + 6, PHOTO_SIZE + 6);
 
-    // Photo
     ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
-    // Thin inner green line
     ctx.strokeStyle = THEME.green;
     ctx.lineWidth = 2;
     ctx.strokeRect(PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
-    // Number tag
     drawNumberTag(ctx, PAD + 12, y + 12, String(i + 1).padStart(2, '0'));
   }
 
@@ -371,11 +357,9 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const W = 1800;
   const H = 1350;
 
-  // Decorative frame around the whole canvas
-  const FRAME = 26;           // dark green outer frame thickness
-  const FRAME_INNER = 4;      // thin green inner line
-  const MAT = 20;             // white mat thickness between frame and content
-  const CONTENT_PAD = 40;     // padding inside the mat
+  const FRAME = 26;
+  const FRAME_INNER = 4;
+  const CONTENT_PAD = 40;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -387,26 +371,17 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   ctx.fillRect(0, 0, W, H);
 
   /* ---------- DECORATIVE FRAME ---------- */
-  // Outer dark green frame
   drawChunkyBorder(ctx, 0, 0, W, H, FRAME, THEME.green, 0);
 
-  // Thin inner green line
   ctx.strokeStyle = THEME.greenMid;
   ctx.lineWidth = FRAME_INNER;
   const lineInset = FRAME + 6;
   ctx.strokeRect(lineInset, lineInset, W - lineInset * 2, H - lineInset * 2);
 
-  // White mat
-  ctx.fillStyle = THEME.white;
   const matInset = FRAME + 12;
-  ctx.fillRect(
-    matInset,
-    matInset,
-    W - matInset * 2,
-    H - matInset * 2
-  );
+  ctx.fillStyle = THEME.white;
+  ctx.fillRect(matInset, matInset, W - matInset * 2, H - matInset * 2);
 
-  // Small corner triangles inside the mat
   drawCornerAccents(
     ctx,
     matInset,
@@ -424,22 +399,19 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const contentW = W - (matInset + CONTENT_PAD) * 2;
   const contentH = H - (matInset + CONTENT_PAD) * 2;
 
-  /* ---------- HEADER (compact, inside mat) ---------- */
-  const HEADER_H = 180;
+  /* ---------- HEADER (compact) ---------- */
+  const HEADER_H = 140;
   const hx = contentX;
   const hy = contentY;
   const hw = contentW;
   const hh = HEADER_H;
 
-  // Header shadow
   ctx.fillStyle = THEME.greenMid;
   ctx.fillRect(hx + 10, hy + 10, hw, hh);
 
-  // Header block
   ctx.fillStyle = THEME.green;
   ctx.fillRect(hx, hy, hw, hh);
 
-  // Diagonal stripes behind title
   ctx.save();
   ctx.beginPath();
   ctx.rect(hx, hy, hw, hh);
@@ -463,53 +435,55 @@ async function generateDepartmentImage(imgSrc, departmentName) {
     subtitle: 'ONE TEAM. ONE FAMILY.'
   });
 
-  drawZigZag(ctx, hx, hy + hh, hw, 16, THEME.green, 40);
+  drawZigZag(ctx, hx, hy + hh, hw, 14, THEME.green, 44);
 
-  /* ---------- FOOTER (inside mat) ---------- */
-  const FOOTER_H = 130;
+  /* ---------- FOOTER (compact) ---------- */
+  const FOOTER_H = 100;
   const fy = contentY + contentH - FOOTER_H;
 
-  // Zig-zag above footer
-  drawZigZag(ctx, hx, fy - 16, hw, 16, THEME.green, 40);
+  drawZigZag(ctx, hx, fy - 14, hw, 14, THEME.green, 44);
 
-  // Footer shadow
   ctx.fillStyle = THEME.greenMid;
   ctx.fillRect(hx + 10, fy + 10, hw, FOOTER_H - 10);
 
-  // Footer block
   ctx.fillStyle = THEME.green;
   ctx.fillRect(hx, fy, hw, FOOTER_H - 10);
 
   drawRetroFooter(ctx, hx, fy, hw, FOOTER_H - 10);
 
-  /* ---------- PHOTO (landscape, fills the middle) ---------- */
-  const photoY = hy + hh + 36;
-  const photoH = fy - photoY - 36;
-  const photoX = contentX;
-  const photoW = contentW;
+  /* ---------- PHOTO (4:3 slot, no crop) ---------- */
+  const slotTop = hy + hh + 30;
+  const slotBottom = fy - 30;
+  const slotMaxH = slotBottom - slotTop;
+  const slotMaxW = contentW;
 
-  // Sticker shadow
+  let photoW = slotMaxW;
+  let photoH = photoW * 3 / 4;
+
+  if (photoH > slotMaxH) {
+    photoH = slotMaxH;
+    photoW = photoH * 4 / 3;
+  }
+
+  const photoX = contentX + (contentW - photoW) / 2;
+  const photoY = slotTop + (slotMaxH - photoH) / 2;
+
   ctx.fillStyle = THEME.greenLight;
   ctx.fillRect(photoX + 10, photoY + 10, photoW, photoH);
 
-  // Thin dark green outer frame
   ctx.fillStyle = THEME.green;
   ctx.fillRect(photoX - 8, photoY - 8, photoW + 16, photoH + 16);
 
-  // Thin white inner gutter
   ctx.fillStyle = THEME.white;
   ctx.fillRect(photoX - 3, photoY - 3, photoW + 6, photoH + 6);
 
-  // Draw photo (cover-fit)
   const img = await loadImage(imgSrc);
-  drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
+  drawImageContain(ctx, img, photoX, photoY, photoW, photoH, THEME.greenPale);
 
-  // Thin green outline on the photo
   ctx.strokeStyle = THEME.green;
   ctx.lineWidth = 2;
   ctx.strokeRect(photoX, photoY, photoW, photoH);
 
-  // Sticker tag
   drawStickerTag(ctx, photoX + 22, photoY + 22, 'PHOTO 01', -4);
 
   return canvas.toDataURL('image/png');
@@ -535,7 +509,6 @@ function drawChunkyBorder(ctx, x, y, w, h, thickness, color, innerThickness) {
 }
 
 function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
-  // top-left
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x, y);
@@ -551,7 +524,6 @@ function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
   ctx.closePath();
   ctx.fill();
 
-  // top-right
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x + w - size, y);
@@ -567,7 +539,6 @@ function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
   ctx.closePath();
   ctx.fill();
 
-  // bottom-left
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x, y + h - size);
@@ -583,7 +554,6 @@ function drawCornerAccents(ctx, x, y, w, h, size, color, accentColor) {
   ctx.closePath();
   ctx.fill();
 
-  // bottom-right
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x + w - size, y + h - size);
@@ -701,26 +671,26 @@ function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   const cx = x + w / 2;
 
   // Eyebrow tag
-  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
+  ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
   const eW = ctx.measureText(eyebrow).width;
-  const tagW = eW + 44;
-  const tagH = 42;
+  const tagW = eW + 40;
+  const tagH = 38;
   const tagX = cx - tagW / 2;
-  const tagY = y + 20;
+  const tagY = y + 16;
 
   ctx.fillStyle = THEME.greenLight;
   ctx.fillRect(tagX, tagY, tagW, tagH);
   ctx.fillStyle = THEME.green;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
+  ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
   ctx.fillText(eyebrow, cx, tagY + tagH / 2 + 1);
 
   // Title
-  const lines = fitTitleLines(ctx, title, w - 120, 64);
-  const lineHeight = 72;
+  const lines = fitTitleLines(ctx, title, w - 120, 60);
+  const lineHeight = 66;
   const totalH = lines.length * lineHeight;
-  const startY = y + h / 2 - totalH / 2 + 22;
+  const startY = y + h / 2 - totalH / 2 + 20;
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -728,9 +698,9 @@ function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
   lines.forEach((line, i) => {
     const ly = startY + i * lineHeight + lineHeight / 2;
 
-    ctx.font = `900 64px "Trebuchet MS", sans-serif`;
+    ctx.font = `900 60px "Trebuchet MS", sans-serif`;
     ctx.lineJoin = 'round';
-    ctx.lineWidth = 9;
+    ctx.lineWidth = 8;
     ctx.strokeStyle = THEME.greenMid;
     ctx.strokeText(line, cx, ly);
 
@@ -743,8 +713,8 @@ function drawRetroHeader(ctx, x, y, w, h, { eyebrow, title, subtitle }) {
 
   // Subtitle
   ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
-  ctx.fillText(subtitle, cx, y + h - 32);
+  ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
+  ctx.fillText(subtitle, cx, y + h - 26);
 }
 
 function fitTitleLines(ctx, text, maxWidth, fontSize) {
@@ -774,13 +744,13 @@ function drawRetroFooter(ctx, x, y, w, h) {
 
   // Badge
   ctx.save();
-  ctx.translate(cx, y + 42);
+  ctx.translate(cx, y + 36);
   ctx.rotate(-1.5 * Math.PI / 180);
 
   const badgeText = `TEACHERS DAY  /  NO. ${new Date().getFullYear()}`;
-  ctx.font = `900 20px "Courier New", monospace`;
-  const bw = ctx.measureText(badgeText).width + 40;
-  const bh = 40;
+  ctx.font = `900 18px "Courier New", monospace`;
+  const bw = ctx.measureText(badgeText).width + 36;
+  const bh = 36;
 
   ctx.fillStyle = THEME.greenLight;
   ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
@@ -800,11 +770,11 @@ function drawRetroFooter(ctx, x, y, w, h) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const tagY = y + h / 2 + 16;
+  const tagY = y + h / 2 + 12;
 
-  ctx.font = `italic 900 44px "Trebuchet MS", sans-serif`;
+  ctx.font = `italic 900 38px "Trebuchet MS", sans-serif`;
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 6;
+  ctx.lineWidth = 5;
   ctx.strokeStyle = THEME.greenMid;
   ctx.strokeText(TAGLINE, cx, tagY);
 
@@ -816,15 +786,15 @@ function drawRetroFooter(ctx, x, y, w, h) {
 
   // Date
   ctx.fillStyle = THEME.greenLight;
-  ctx.font = `bold 20px "Courier New", monospace`;
+  ctx.font = `bold 18px "Courier New", monospace`;
   ctx.fillText(
     new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
     cx,
-    y + h - 20
+    y + h - 18
   );
 
   // Barcode
-  drawBarcode(ctx, x + 24, y + h - 14, 160, 8);
+  drawBarcode(ctx, x + 24, y + h - 12, 140, 7);
 }
 
 function drawBarcode(ctx, x, y, w, h) {
@@ -900,6 +870,9 @@ function loadImage(src) {
   });
 }
 
+/**
+ * Fill the whole target rect (crop if needed).
+ */
 function drawImageCover(ctx, img, x, y, w, h) {
   const ir = img.width / img.height;
   const tr = w / h;
@@ -918,6 +891,34 @@ function drawImageCover(ctx, img, x, y, w, h) {
   }
 
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+/**
+ * Draw the image fully visible (no crop), letterboxed if needed.
+ */
+function drawImageContain(ctx, img, x, y, w, h, bgColor) {
+  if (bgColor) {
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, y, w, h);
+  }
+
+  const ir = img.width / img.height;
+  const tr = w / h;
+
+  let dw, dh;
+
+  if (ir > tr) {
+    dw = w;
+    dh = w / ir;
+  } else {
+    dh = h;
+    dw = h * ir;
+  }
+
+  const dx = x + (w - dw) / 2;
+  const dy = y + (h - dh) / 2;
+
+  ctx.drawImage(img, dx, dy, dw, dh);
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
