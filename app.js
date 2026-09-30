@@ -26,15 +26,12 @@ let photos = [];
 let facingMode = 'user';
 
 const THEME = {
-  cream:  '#f5efd0',
-  mint:   '#a8d5c8',
-  teal:   '#1e4d4a',
-  coral:  '#e85c4a',
-  peach:  '#f4a261',
-  gold:   '#e8a83c',
-  orange: '#e8862b',
-  pink:   '#e85c8a',
-  blue:   '#4a9fd8'
+  greenDark: '#0d3b1f',
+  greenMid:  '#1a4d2e',
+  greenSoft: '#2d6a4f',
+  cream:     '#f5f5f0',
+  white:     '#ffffff',
+  gold:      '#e8a83c'
 };
 
 const TAGLINE = 'Teacher, Ikaw Naman!';
@@ -70,7 +67,7 @@ modeSwitcher.addEventListener('click', (e) => {
     headerSubtitle.textContent = 'One for the whole team';
   } else {
     headerTitle.textContent = 'Teachers Day Photobooth';
-    headerSubtitle.textContent = 'Est. 1995 / Teacher, Ikaw Naman!';
+    headerSubtitle.textContent = 'Teacher, Ikaw Naman!';
   }
 });
 
@@ -225,7 +222,7 @@ function triggerDownload(dataUrl, mode) {
 }
 
 /* ================================================================
-   IMAGE GENERATION
+   IMAGE GENERATION - dark green theme
    ================================================================ */
 
 function drawTitleBlock(ctx, cx, topY, size = 100) {
@@ -240,11 +237,11 @@ function drawTitleBlock(ctx, cx, topY, size = 100) {
   lines.forEach((line, i) => {
     const ly = topY + i * lineHeight + lineHeight / 2;
 
-    ctx.lineWidth = size * 0.16;
-    ctx.strokeStyle = THEME.gold;
+    ctx.lineWidth = size * 0.14;
+    ctx.strokeStyle = THEME.greenDark;
     ctx.strokeText(line, cx, ly);
 
-    ctx.fillStyle = THEME.teal;
+    ctx.fillStyle = THEME.cream;
     ctx.fillText(line, cx, ly);
   });
 
@@ -261,21 +258,24 @@ function drawTagline(ctx, cx, centerY, size = 74) {
   const padX = 32;
   const padY = size * 0.45;
 
-  ctx.fillStyle = 'rgba(245, 239, 208, 0.95)';
+  // Green plate behind tagline
+  ctx.fillStyle = THEME.greenMid;
   ctx.fillRect(cx - w / 2 - padX, centerY - padY, w + padX * 2, padY * 2);
 
-  ctx.lineWidth = size * 0.14;
-  ctx.strokeStyle = THEME.gold;
+  // Cream stroke
+  ctx.lineWidth = size * 0.12;
+  ctx.strokeStyle = THEME.cream;
   ctx.strokeText(TAGLINE, cx, centerY);
 
-  ctx.fillStyle = THEME.orange;
+  // Gold fill
+  ctx.fillStyle = THEME.gold;
   ctx.fillText(TAGLINE, cx, centerY);
 
   return centerY + padY;
 }
 
 function drawFooterStrip(ctx, x, y, w, h) {
-  ctx.fillStyle = THEME.mint;
+  ctx.fillStyle = THEME.greenDark;
   ctx.fillRect(x, y, w, h);
 
   const cx = x + w / 2;
@@ -286,15 +286,17 @@ function drawFooterStrip(ctx, x, y, w, h) {
   const sh = 46;
   const sy = y + (h - sh - 40) / 2;
 
-  ctx.fillStyle = THEME.teal;
+  // Cream badge
+  ctx.fillStyle = THEME.cream;
   ctx.fillRect(cx - sw / 2, sy, sw, sh);
 
-  ctx.fillStyle = THEME.cream;
+  ctx.fillStyle = THEME.greenDark;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(stampText, cx, sy + sh / 2 + 1);
 
-  ctx.fillStyle = THEME.teal;
+  // Date
+  ctx.fillStyle = THEME.cream;
   ctx.font = 'bold 20px "Courier New", monospace';
   ctx.fillText(
     new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
@@ -327,7 +329,8 @@ async function generateFunStrip(imgs) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = THEME.cream;
+  // Dark green background
+  ctx.fillStyle = THEME.greenDark;
   ctx.fillRect(0, 0, W, H);
 
   drawTitleBlock(ctx, W / 2, titleTop, TITLE_SIZE);
@@ -339,19 +342,23 @@ async function generateFunStrip(imgs) {
     const y = photosStartY + i * (PHOTO_SIZE + GAP);
     const img = await loadImage(imgs[i]);
 
-    ctx.fillStyle = THEME.coral;
+    // Soft green offset shadow
+    ctx.fillStyle = THEME.greenSoft;
     ctx.fillRect(PAD + 8, y + 8, PHOTO_SIZE, PHOTO_SIZE);
 
-    ctx.fillStyle = THEME.teal;
+    // Cream frame
+    ctx.fillStyle = THEME.cream;
     ctx.fillRect(PAD - 6, y - 6, PHOTO_SIZE + 12, PHOTO_SIZE + 12);
 
+    // Photo
     ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
 
+    // Number badge
     const bx = PAD + 46;
     const by = y + 46;
     const br = 24;
 
-    ctx.fillStyle = THEME.teal;
+    ctx.fillStyle = THEME.greenDark;
     ctx.beginPath();
     ctx.arc(bx, by, br, 0, Math.PI * 2);
     ctx.fill();
@@ -388,7 +395,8 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = THEME.cream;
+  // Dark green background
+  ctx.fillStyle = THEME.greenDark;
   ctx.fillRect(0, 0, W, H);
 
   const TITLE_SIZE = 96;
@@ -407,13 +415,15 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const bx = W / 2 - bw / 2;
   const by = taglineBottomY + 30;
 
-  ctx.fillStyle = THEME.coral;
+  // Soft green shadow
+  ctx.fillStyle = THEME.greenSoft;
   ctx.fillRect(bx + 8, by + 8, bw, bh);
 
-  ctx.fillStyle = THEME.teal;
+  // Cream badge
+  ctx.fillStyle = THEME.cream;
   ctx.fillRect(bx, by, bw, bh);
 
-  ctx.fillStyle = THEME.cream;
+  ctx.fillStyle = THEME.greenDark;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(badgeText, W / 2, by + bh / 2 + 2);
@@ -423,10 +433,12 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const photoX = PAD;
   const photoW = W - PAD * 2;
 
-  ctx.fillStyle = THEME.coral;
+  // Soft green offset shadow
+  ctx.fillStyle = THEME.greenSoft;
   ctx.fillRect(photoX + 8, photoY + 8, photoW, photoH);
 
-  ctx.fillStyle = THEME.teal;
+  // Cream outline
+  ctx.fillStyle = THEME.cream;
   ctx.fillRect(photoX - 5, photoY - 5, photoW + 10, photoH + 10);
 
   const img = await loadImage(imgSrc);
@@ -436,7 +448,7 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const tagY = photoY + 46;
   const tagR = 24;
 
-  ctx.fillStyle = THEME.teal;
+  ctx.fillStyle = THEME.greenDark;
   ctx.beginPath();
   ctx.arc(tagX, tagY, tagR, 0, Math.PI * 2);
   ctx.fill();
