@@ -1,22 +1,78 @@
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* ---------- DOM ---------- */
 const video = document.getElementById('video');
 const startBtn = document.getElementById('startBtn');
 const captureBtn = document.getElementById('captureBtn');
-const printBtn = document.getElementById('printBtn');
+const downloadBtn = document.getElementById('downloadBtn');
 const retakeBtn = document.getElementById('retakeBtn');
 const flipBtn = document.getElementById('flipBtn');
 const results = document.getElementById('results');
 const actions = document.getElementById('actions');
 const countdown = document.getElementById('countdown');
 const flash = document.getElementById('flash');
+const modeSwitcher = document.getElementById('modeSwitcher');
+const deptPanel = document.getElementById('deptPanel');
+const deptInput = document.getElementById('deptInput');
+const deptList = document.getElementById('deptList');
+const headerTitle = document.getElementById('headerTitle');
+const headerSubtitle = document.getElementById('headerSubtitle');
 
-const MAX_PHOTOS = 3;
+/* ---------- STATE ---------- */
+let mode = 'fun'; // 'fun' | 'department'
 let stream = null;
 let photos = [];
 let facingMode = 'user';
 
+const THEME = {
+  green: '#1a4d2e',
+  greenMid: '#2d6a4f',
+  greenLight: '#d4e8db',
+  white: '#ffffff'
+};
+
+/* ---------- POPULATE DEPARTMENT LIST ---------- */
+if (typeof DEPARTMENTS !== 'undefined') {
+  DEPARTMENTS.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d;
+    deptList.appendChild(opt);
+  });
+}
+
+/* ---------- MODE SWITCHING ---------- */
+modeSwitcher.addEventListener('click', (e) => {
+  const btn = e.target.closest('.mode-btn');
+  if (!btn) return;
+  const newMode = btn.dataset.mode;
+  if (newMode === mode) return;
+
+  mode = newMode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+
+  // reset session
+  photos = [];
+  results.innerHTML = '';
+  results.classList.toggle('single', mode === 'department');
+  actions.style.display = 'none';
+  captureBtn.disabled = !stream;
+  captureBtn.textContent = mode === 'department' ? 'Take Photo' : 'Take Photo';
+
+  // toggle department panel
+  deptPanel.style.display = mode === 'department' ? 'block' : 'none';
+
+  // update header copy
+  if (mode === 'department') {
+    headerTitle.textContent = 'Department Photo';
+    headerSubtitle.textContent = 'One for the whole team';
+  } else {
+    headerTitle.textContent = 'Teachers Day Photobooth';
+    headerSubtitle.textContent = 'Est. 1995 / Smile, you look great today';
+  }
+});
+
+/* ---------- CAMERA ---------- */
 startBtn.addEventListener('click', startCamera);
 
 flipBtn.addEventListener('click', async () => {
@@ -46,8 +102,11 @@ async function startCamera() {
   }
 }
 
+/* ---------- CAPTURE ---------- */
 captureBtn.addEventListener('click', async () => {
-  if (photos.length >= MAX_PHOTOS) return;
+  if (mode === 'fun' && photos.length >= 3) return;
+  if (mode === 'department' && photos.length >= 1) return;
+
   captureBtn.disabled = true;
 
   for (let i = 3; i > 0; i--) {
@@ -67,7 +126,8 @@ captureBtn.addEventListener('click', async () => {
 
   uploadPhoto(dataUrl).catch(e => console.error('Upload failed:', e));
 
-  if (photos.length < MAX_PHOTOS) {
+  const maxPhotos = mode === 'department' ? 1 : 3;
+  if (photos.length < maxPhotos) {
     captureBtn.disabled = false;
   } else {
     actions.style.display = 'flex';
@@ -81,18 +141,11 @@ retakeBtn.addEventListener('click', () => {
   captureBtn.disabled = false;
 });
 
-printBtn.addEventListener('click', () => {
-  if (photos.length === 0) return;
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(buildPrintHTML(photos));
-  printWindow.document.close();
-});
-
 function captureFrame() {
   const canvas = document.createElement('canvas');
   const size = Math.min(video.videoWidth, video.videoHeight);
-  canvas.width = 800;
-  canvas.height = 800;
+  canvas.width = 1200;
+  canvas.height = 1200;
   const ctx = canvas.getContext('2d');
 
   const sx = (video.videoWidth - size) / 2;
@@ -103,14 +156,15 @@ function captureFrame() {
     ctx.scale(-1, 1);
   }
 
-  ctx.drawImage(video, sx, sy, size, size, 0, 0, 800, 800);
-  return canvas.toDataURL('image/jpeg', 0.92);
+  ctx.drawImage(video, sx, sy, size, size, 0, 0, 1200, 1200);
+  return canvas.toDataURL('image/jpeg', 0.95);
 }
 
 function renderResults() {
   results.innerHTML = photos.map(src => `<img src="${src}" />`).join('');
 }
 
+/* ---------- UPLOAD ---------- */
 async function uploadPhoto(dataUrl) {
   const blob = await (await fetch(dataUrl)).blob();
   const filename = `photo-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
@@ -123,286 +177,414 @@ async function uploadPhoto(dataUrl) {
 
   const { data: urlData } = db.storage.from('photobooth').getPublicUrl(filename);
 
-  await db.from('photos').insert({ image_url: urlData.publicUrl });
+  await db.from('photos').insert({
+    image_url: urlData.publicUrl,
+    mode: mode,
+    department: mode === 'department' ? (deptInput.value.trim() || null) : null
+  });
 }
 
-/* ------------------------------------------------------------------
-   PRINT LAYOUT - 90's THEME
-   SHORT BOND PAPER (Letter 8.5 x 11 in) in LANDSCAPE
-   = 279.4mm x 215.9mm
-   Strip ~70mm wide, placed on the LEFT side.
-   ------------------------------------------------------------------ */
+/* ---------- DOWNLOAD ---------- */
+downloadBtn.addEventListener('click', async () => {
+  if (photos.length === 0) return;
 
-const STRIP_ALIGN = 'left'; // 'right' | 'left' | 'center'
+  downloadBtn.disabled = true;
+  downloadBtn.textContent = 'Generating...';
 
-function buildPrintHTML(imgs) {
-  const photoCells = imgs.map((src, i) => `
-    <div class="photo-frame">
-      <img src="${src}" class="photo" />
-      <span class="photo-num">${String(i + 1).padStart(2, '0')}</span>
-    </div>
-  `).join('');
+  try {
+    let dataUrl;
+    if (mode === 'department') {
+      dataUrl = await generateDepartmentImage(photos[0], deptInput.value.trim());
+    } else {
+      dataUrl = await generateFunStrip(photos);
+    }
+    triggerDownload(dataUrl, mode);
+  } catch (err) {
+    console.error(err);
+    alert('Failed to generate image: ' + err.message);
+  } finally {
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = 'Download';
+  }
+});
 
-  const today = new Date().toLocaleDateString(undefined, {
-    year: 'numeric', month: 'long', day: 'numeric'
+function triggerDownload(dataUrl, mode) {
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  a.href = dataUrl;
+  a.download = `teachers-day-${mode}-${ts}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+/* ================================================================
+   IMAGE GENERATION
+   ================================================================ */
+
+/**
+ * FUN SHOTS - vertical 3-photo strip (portrait).
+ * Aspect ratio roughly 1:2.7 to mimic a classic photobooth strip.
+ */
+async function generateFunStrip(imgs) {
+  const W = 1200;          // strip width
+  const HEADER_H = 320;
+  const FOOTER_H = 200;
+  const PAD = 60;          // outer padding
+  const GAP = 40;
+  const PHOTO_SIZE = W - PAD * 2; // square photos
+  const H = HEADER_H + PAD + (PHOTO_SIZE * 3) + (GAP * 2) + FOOTER_H + PAD;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // background
+  ctx.fillStyle = THEME.white;
+  ctx.fillRect(0, 0, W, H);
+
+  // outer chunky border
+  drawChunkyBorder(ctx, 0, 0, W, H, 18, THEME.green, 6);
+
+  // corner triangles
+  drawCornerAccents(ctx, 0, 0, W, H, 90, THEME.green);
+
+  // header block
+  const hx = 30, hy = 30, hw = W - 60, hh = HEADER_H - 60;
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(hx, hy, hw, hh);
+
+  // hard shadow under header
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(hx + 12, hy + hh, hw, 12);
+
+  drawHeaderText(ctx, hx, hy, hw, hh, 'With Gratitude', 'Happy Teachers Day', 'Thank You For Everything');
+
+  // photos
+  const startY = HEADER_H + 20;
+  for (let i = 0; i < 3; i++) {
+    const y = startY + i * (PHOTO_SIZE + GAP);
+    const img = await loadImage(imgs[i]);
+
+    // sticker shadow
+    ctx.fillStyle = THEME.greenLight;
+    ctx.fillRect(PAD + 14, y + 14, PHOTO_SIZE, PHOTO_SIZE);
+
+    // frame
+    ctx.fillStyle = THEME.green;
+    ctx.fillRect(PAD - 8, y - 8, PHOTO_SIZE + 16, PHOTO_SIZE + 16);
+
+    // photo
+    ctx.drawImage(img, PAD, y, PHOTO_SIZE, PHOTO_SIZE);
+
+    // number tag
+    drawNumberTag(ctx, PAD + 4, y + 4, String(i + 1).padStart(2, '0'));
+  }
+
+  // footer
+  const fy = H - FOOTER_H;
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(30, fy, W - 60, FOOTER_H - 30);
+
+  // zig-zag top edge of footer
+  drawZigZag(ctx, 30, fy - 16, W - 60, 16, THEME.green);
+
+  drawFooterText(ctx, 30, fy, W - 60, FOOTER_H - 30);
+
+  return canvas.toDataURL('image/png');
+}
+
+/**
+ * DEPARTMENT - single big landscape photo with banner template.
+ */
+async function generateDepartmentImage(imgSrc, departmentName) {
+  const W = 1800;
+  const H = 1350; // 4:3
+  const PAD = 70;
+  const HEADER_H = 260;
+  const FOOTER_H = 220;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // background
+  ctx.fillStyle = THEME.white;
+  ctx.fillRect(0, 0, W, H);
+
+  // chunky border
+  drawChunkyBorder(ctx, 0, 0, W, H, 22, THEME.green, 8);
+
+  // corner accents
+  drawCornerAccents(ctx, 0, 0, W, H, 130, THEME.green);
+
+  // header banner
+  const hx = 40, hy = 40, hw = W - 80, hh = HEADER_H - 60;
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(hx, hy, hw, hh);
+
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(hx + 14, hy + hh, hw, 14);
+
+  // header text (customized for department)
+  const dept = (departmentName && departmentName.trim()) || 'Department';
+  drawHeaderText(
+    ctx, hx, hy, hw, hh,
+    'Teachers Day 1995',
+    dept.toUpperCase(),
+    'One Team. One Family.'
+  );
+
+  // photo area
+  const photoY = hy + hh + 60;
+  const photoH = H - photoY - FOOTER_H - 60;
+  const photoX = PAD;
+  const photoW = W - PAD * 2;
+
+  // sticker shadow
+  ctx.fillStyle = THEME.greenLight;
+  ctx.fillRect(photoX + 18, photoY + 18, photoW, photoH);
+
+  // frame
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(photoX - 12, photoY - 12, photoW + 24, photoH + 24);
+
+  // draw the photo (cover-fit)
+  const img = await loadImage(imgSrc);
+  drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
+
+  // footer
+  const fy = H - FOOTER_H;
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(40, fy, W - 80, FOOTER_H - 40);
+
+  // zig-zag top
+  drawZigZag(ctx, 40, fy - 18, W - 80, 18, THEME.green);
+
+  // footer content
+  ctx.fillStyle = THEME.white;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const cx = W / 2;
+
+  // stamp box
+  drawStampBox(ctx, cx, fy + 55, `No. ${new Date().getFullYear()}`);
+
+  // message
+  ctx.fillStyle = THEME.white;
+  ctx.font = `bold 44px "Trebuchet MS", sans-serif`;
+  ctx.fillText('THANK YOU FOR EVERYTHING', cx, fy + 125);
+
+  // date
+  ctx.fillStyle = THEME.greenLight;
+  ctx.font = `28px "Courier New", monospace`;
+  ctx.fillText(
+    new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
+    cx,
+    fy + 165
+  );
+
+  return canvas.toDataURL('image/png');
+}
+
+/* ---------- DRAWING HELPERS ---------- */
+
+function drawChunkyBorder(ctx, x, y, w, h, thickness, color, innerThickness) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, thickness);              // top
+  ctx.fillRect(x, y + h - thickness, w, thickness); // bottom
+  ctx.fillRect(x, y, thickness, h);              // left
+  ctx.fillRect(x + w - thickness, y, thickness, h); // right
+
+  if (innerThickness) {
+    const inset = thickness + 12;
+    ctx.strokeStyle = THEME.greenMid;
+    ctx.lineWidth = innerThickness;
+    ctx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
+  }
+}
+
+function drawCornerAccents(ctx, x, y, w, h, size, color) {
+  ctx.fillStyle = color;
+  // top-left
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + size, y);
+  ctx.lineTo(x, y + size);
+  ctx.closePath();
+  ctx.fill();
+  // top-right
+  ctx.beginPath();
+  ctx.moveTo(x + w - size, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w, y + size);
+  ctx.closePath();
+  ctx.fill();
+  // bottom-left
+  ctx.beginPath();
+  ctx.moveTo(x, y + h - size);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x + size, y + h);
+  ctx.closePath();
+  ctx.fill();
+  // bottom-right
+  ctx.beginPath();
+  ctx.moveTo(x + w - size, y + h - size);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x + w - size, y + h);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawZigZag(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color;
+  const teeth = 30;
+  const toothW = w / teeth;
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  for (let i = 0; i < teeth; i++) {
+    const px = x + i * toothW;
+    ctx.lineTo(px + toothW / 2, y);
+    ctx.lineTo(px + toothW, y + h);
+  }
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawHeaderText(ctx, x, y, w, h, eyebrow, title, subtitle) {
+  const cx = x + w / 2;
+
+  // eyebrow
+  ctx.fillStyle = THEME.greenLight;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
+  ctx.fillText(eyebrow.toUpperCase(), cx, y + h * 0.22);
+
+  // title - split into 2 lines if it has spaces and is long
+  ctx.fillStyle = THEME.white;
+  ctx.font = `900 64px "Trebuchet MS", sans-serif`;
+
+  const lines = title.split(' ').length > 2 ? splitIntoTwoLines(title) : [title];
+  const lineHeight = 70;
+  const startY = y + h / 2 + (lines.length === 1 ? 0 : -lineHeight / 2);
+
+  lines.forEach((line, i) => {
+    ctx.fillStyle = THEME.greenMid;
+    ctx.fillText(line.toUpperCase(), cx + 3, startY + i * lineHeight + 3);
+    ctx.fillStyle = THEME.white;
+    ctx.fillText(line.toUpperCase(), cx, startY + i * lineHeight);
   });
 
-  const justify =
-    STRIP_ALIGN === 'right' ? 'flex-end' :
-    STRIP_ALIGN === 'left'  ? 'flex-start' :
-    'center';
+  // subtitle
+  ctx.fillStyle = THEME.greenLight;
+  ctx.font = `bold 22px "Trebuchet MS", sans-serif`;
+  ctx.fillText(subtitle.toUpperCase(), cx, y + h * 0.83);
+}
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Print</title>
-      <style>
-        /* Short bond = US Letter 8.5 x 11 in, landscape */
-        @page { size: 11in 8.5in; margin: 0; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+function splitIntoTwoLines(text) {
+  const words = text.split(' ');
+  const mid = Math.ceil(words.length / 2);
+  return [
+    words.slice(0, mid).join(' '),
+    words.slice(mid).join(' ')
+  ];
+}
 
-        html, body {
-          width: 279.4mm;
-          height: 215.9mm;
-          background: #ffffff;
-          font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
-          color: #1a4d2e;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-          overflow: hidden;
-        }
+function drawFooterText(ctx, x, y, w, h) {
+  const cx = x + w / 2;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-        .page {
-          width: 279.4mm;
-          height: 215.9mm;
-          display: flex;
-          align-items: center;
-          justify-content: ${justify};
-          padding: 6mm;
-          background: #ffffff;
-        }
+  // stamp
+  drawStampBox(ctx, cx, y + 55, `No. ${new Date().getFullYear()}`);
 
-        /* ---------- STRIP ---------- */
-        .strip {
-          width: 70mm;
-          height: 200mm;
-          padding: 4mm;
-          background: #ffffff;
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          gap: 2.5mm;
-        }
+  // message
+  ctx.fillStyle = THEME.white;
+  ctx.font = `bold 40px "Trebuchet MS", sans-serif`;
+  ctx.fillText('THANK YOU FOR EVERYTHING', cx, y + 125);
 
-        .strip::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border: 1.4mm solid #1a4d2e;
-          pointer-events: none;
-        }
+  // date
+  ctx.fillStyle = THEME.greenLight;
+  ctx.font = `26px "Courier New", monospace`;
+  ctx.fillText(
+    new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
+    cx,
+    y + h - 10
+  );
+}
 
-        .strip::after {
-          content: "";
-          position: absolute;
-          inset: 2.2mm;
-          border: 0.35mm solid #2d6a4f;
-          pointer-events: none;
-        }
+function drawStampBox(ctx, cx, cy, text) {
+  ctx.font = `bold 24px "Courier New", monospace`;
+  const padding = 20;
+  const textW = ctx.measureText(text).width;
+  const boxW = textW + padding * 2;
+  const boxH = 50;
 
-        .corner-accent {
-          position: absolute;
-          width: 8mm;
-          height: 8mm;
-          background: #1a4d2e;
-          z-index: 2;
-        }
-        .corner-accent.tl { top: 0; left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
-        .corner-accent.tr { top: 0; right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
-        .corner-accent.bl { bottom: 0; left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
-        .corner-accent.br { bottom: 0; right: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+  ctx.strokeStyle = THEME.greenLight;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 6]);
+  ctx.strokeRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+  ctx.setLineDash([]);
 
-        .inner {
-          position: relative;
-          z-index: 3;
-          display: flex;
-          flex-direction: column;
-          gap: 2.5mm;
-          height: 100%;
-          padding: 3mm 2mm 2mm;
-        }
+  ctx.fillStyle = THEME.white;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, cy + 1);
+}
 
-        /* ---------- HEADER ---------- */
-        .header {
-          text-align: center;
-          padding: 2.5mm 0 2.5mm;
-          background: #1a4d2e;
-          color: #ffffff;
-          position: relative;
-          box-shadow: 1.6mm 1.6mm 0 #2d6a4f;
-        }
+function drawNumberTag(ctx, x, y, text) {
+  ctx.font = `900 22px "Courier New", monospace`;
+  const padding = 14;
+  const textW = ctx.measureText(text).width;
+  const boxW = textW + padding * 2;
+  const boxH = 40;
 
-        .header::after {
-          content: "";
-          position: absolute;
-          left: 0; right: 0; bottom: -1.6mm;
-          height: 1.6mm;
-          background:
-            linear-gradient(135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm,
-            linear-gradient(-135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm;
-          background-repeat: repeat-x;
-        }
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(x, y, boxW, boxH);
 
-        .eyebrow {
-          font-size: 5.5pt;
-          letter-spacing: 1mm;
-          color: #d4e8db;
-          text-transform: uppercase;
-          font-weight: 700;
-          margin-bottom: 1mm;
-          padding-left: 1mm;
-        }
+  ctx.strokeStyle = THEME.white;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x, y, boxW, boxH);
 
-        .title {
-          font-size: 13pt;
-          font-weight: 900;
-          color: #ffffff;
-          letter-spacing: 0.4mm;
-          text-transform: uppercase;
-          line-height: 1.05;
-          text-shadow: 0.5mm 0.5mm 0 #2d6a4f;
-        }
+  ctx.fillStyle = THEME.white;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + boxW / 2, y + boxH / 2 + 1);
+}
 
-        .sub-title {
-          font-size: 5pt;
-          letter-spacing: 0.6mm;
-          color: #d4e8db;
-          text-transform: uppercase;
-          margin-top: 1.2mm;
-          font-weight: 600;
-        }
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
-        /* ---------- PHOTOS ---------- */
-        .photo-frame {
-          position: relative;
-          flex: 1;
-          min-height: 0;
-          border: 1mm solid #1a4d2e;
-          padding: 0.8mm;
-          background: #ffffff;
-          box-shadow: 1.4mm 1.4mm 0 #d4e8db;
-        }
+function drawImageCover(ctx, img, x, y, w, h) {
+  const ir = img.width / img.height;
+  const tr = w / h;
+  let sx, sy, sw, sh;
 
-        .photo {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
+  if (ir > tr) {
+    sh = img.height;
+    sw = sh * tr;
+    sx = (img.width - sw) / 2;
+    sy = 0;
+  } else {
+    sw = img.width;
+    sh = sw / tr;
+    sx = 0;
+    sy = (img.height - sh) / 2;
+  }
 
-        .photo-num {
-          position: absolute;
-          top: -1.8mm;
-          left: 2.5mm;
-          background: #1a4d2e;
-          color: #ffffff;
-          font-size: 5pt;
-          font-weight: 900;
-          letter-spacing: 0.5mm;
-          padding: 0.7mm 1.8mm 0.6mm;
-          border: 0.3mm solid #ffffff;
-          line-height: 1;
-          font-family: 'Courier New', monospace;
-        }
-
-        /* ---------- FOOTER ---------- */
-        .footer {
-          text-align: center;
-          padding: 2.5mm 0 1.5mm;
-          background: #1a4d2e;
-          color: #ffffff;
-          position: relative;
-        }
-
-        .footer::before {
-          content: "";
-          position: absolute;
-          left: 0; right: 0; top: -1.6mm;
-          height: 1.6mm;
-          background:
-            linear-gradient(135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm,
-            linear-gradient(-135deg, transparent 50%, #1a4d2e 50%) 0 0 / 3.2mm 3.2mm;
-          background-repeat: repeat-x;
-        }
-
-        .footer .stamp {
-          display: inline-block;
-          font-family: 'Courier New', monospace;
-          font-size: 5pt;
-          letter-spacing: 0.6mm;
-          color: #ffffff;
-          border: 0.3mm dashed #d4e8db;
-          padding: 0.6mm 2mm;
-          margin-bottom: 1.2mm;
-          text-transform: uppercase;
-        }
-
-        .footer .message {
-          font-size: 6pt;
-          letter-spacing: 0.6mm;
-          color: #ffffff;
-          text-transform: uppercase;
-          font-weight: 900;
-          margin-bottom: 0.8mm;
-        }
-
-        .footer .date {
-          font-size: 4.5pt;
-          letter-spacing: 0.5mm;
-          color: #d4e8db;
-          text-transform: uppercase;
-          font-family: 'Courier New', monospace;
-        }
-
-        @media print {
-          html, body { width: 279.4mm; height: 215.9mm; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="page">
-        <div class="strip">
-          <div class="corner-accent tl"></div>
-          <div class="corner-accent tr"></div>
-          <div class="corner-accent bl"></div>
-          <div class="corner-accent br"></div>
-
-          <div class="inner">
-            <div class="header">
-              <div class="eyebrow">With Gratitude</div>
-              <div class="title">Happy<br/>Teachers Day</div>
-              <div class="sub-title">Thank You For Everything</div>
-            </div>
-
-            ${photoCells}
-
-            <div class="footer">
-              <div class="stamp">No. ${new Date().getFullYear()}</div>
-              <div class="message">Class of ${new Date().getFullYear()}</div>
-              <div class="date">${today}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <script>
-        window.onload = () => {
-          setTimeout(() => { window.print(); }, 500);
-        };
-      <\/script>
-    </body>
-    </html>
-  `;
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

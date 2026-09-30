@@ -3,16 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Teachers Day Photobooth '95</title>
+  <title>Teachers Day Photobooth</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="container">
+
+    <!-- MODE SWITCHER -->
+    <div class="mode-switcher" id="modeSwitcher">
+      <button class="mode-btn active" data-mode="fun">Fun Shots</button>
+      <button class="mode-btn" data-mode="department">Per Department</button>
+    </div>
+
     <header>
       <div class="tape-strip"></div>
-      <h1>Teachers Day Photobooth</h1>
-      <p class="subtitle">Est. 1995 &nbsp;/&nbsp; Smile, you look great today</p>
+      <h1 id="headerTitle">Teachers Day Photobooth</h1>
+      <p class="subtitle" id="headerSubtitle">Est. 1995 / Smile, you look great today</p>
     </header>
+
+    <!-- DEPARTMENT NAME INPUT (only visible in department mode) -->
+    <div class="dept-panel" id="deptPanel" style="display:none;">
+      <label for="deptInput">Department</label>
+      <input id="deptInput" type="text" list="deptList" placeholder="e.g. Science Department" />
+      <datalist id="deptList"></datalist>
+    </div>
 
     <div class="camera-wrapper">
       <video id="video" autoplay playsinline muted></video>
@@ -36,7 +50,7 @@
     <div class="results" id="results"></div>
 
     <div class="actions" id="actions" style="display:none;">
-      <button id="printBtn" class="btn btn-print">Print</button>
+      <button id="downloadBtn" class="btn btn-print">Download</button>
       <button id="retakeBtn" class="btn btn-secondary">Retake</button>
     </div>
   </div>
