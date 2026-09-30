@@ -399,19 +399,20 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const contentW = W - (matInset + CONTENT_PAD) * 2;
   const contentH = H - (matInset + CONTENT_PAD) * 2;
 
-  /* ---------- HEADER (compact) ---------- */
-  const HEADER_H = 140;
+  /* ---------- HEADER (short, left-aligned) ---------- */
+  const HEADER_H = 96;
   const hx = contentX;
   const hy = contentY;
   const hw = contentW;
   const hh = HEADER_H;
 
   ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(hx + 10, hy + 10, hw, hh);
+  ctx.fillRect(hx + 8, hy + 8, hw, hh);
 
   ctx.fillStyle = THEME.green;
   ctx.fillRect(hx, hy, hw, hh);
 
+  // Diagonal stripes behind header
   ctx.save();
   ctx.beginPath();
   ctx.rect(hx, hy, hw, hh);
@@ -426,34 +427,102 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   }
   ctx.restore();
 
-  drawMemphisDots(ctx, hx, hy, hw, hh);
-
+  // Left-aligned title + right-aligned tag
   const dept = (departmentName && departmentName.trim()) || 'Department';
-  drawRetroHeader(ctx, hx, hy, hw, hh, {
-    eyebrow: 'TEACHERS DAY',
-    title: dept.toUpperCase(),
-    subtitle: 'ONE TEAM. ONE FAMILY.'
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  // Small eyebrow above title
+  ctx.fillStyle = THEME.greenLight;
+  ctx.font = `bold 18px "Trebuchet MS", sans-serif`;
+  ctx.fillText('TEACHERS DAY', hx + 32, hy + 26);
+
+  // Department name (big)
+  ctx.fillStyle = THEME.white;
+  ctx.font = `900 46px "Trebuchet MS", sans-serif`;
+  const titleLines = fitTitleLines(ctx, dept.toUpperCase(), hw - 360, 46);
+  const titleLineH = 50;
+  const titleStartY = hy + 56 + (titleLines.length === 1 ? 10 : 0);
+
+  titleLines.forEach((line, i) => {
+    ctx.fillText(line, hx + 32, titleStartY + i * titleLineH);
   });
 
-  drawZigZag(ctx, hx, hy + hh, hw, 14, THEME.green, 44);
+  // Right side: tagline box
+  ctx.font = `italic 900 30px "Trebuchet MS", sans-serif`;
+  const tagText = TAGLINE;
+  const tagW = ctx.measureText(tagText).width + 40;
+  const tagH = 56;
+  const tagX = hx + hw - tagW - 32;
+  const tagY = hy + (hh - tagH) / 2;
 
-  /* ---------- FOOTER (compact) ---------- */
-  const FOOTER_H = 100;
-  const fy = contentY + contentH - FOOTER_H;
+  ctx.fillStyle = THEME.greenLight;
+  ctx.fillRect(tagX, tagY, tagW, tagH);
 
-  drawZigZag(ctx, hx, fy - 14, hw, 14, THEME.green, 44);
-
-  ctx.fillStyle = THEME.greenMid;
-  ctx.fillRect(hx + 10, fy + 10, hw, FOOTER_H - 10);
+  ctx.strokeStyle = THEME.green;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(tagX, tagY, tagW, tagH);
 
   ctx.fillStyle = THEME.green;
-  ctx.fillRect(hx, fy, hw, FOOTER_H - 10);
+  ctx.textAlign = 'center';
+  ctx.fillText(tagText, tagX + tagW / 2, tagY + tagH / 2 + 2);
 
-  drawRetroFooter(ctx, hx, fy, hw, FOOTER_H - 10);
+  /* ---------- FOOTER (short, left + right aligned) ---------- */
+  const FOOTER_H = 80;
+  const fy = contentY + contentH - FOOTER_H;
+
+  ctx.fillStyle = THEME.greenMid;
+  ctx.fillRect(hx + 8, fy + 8, hw, FOOTER_H - 8);
+
+  ctx.fillStyle = THEME.green;
+  ctx.fillRect(hx, fy, hw, FOOTER_H - 8);
+
+  // Left: badge
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  const badgeText = `NO. ${new Date().getFullYear()}`;
+  ctx.font = `900 22px "Courier New", monospace`;
+  const badgeW = ctx.measureText(badgeText).width + 40;
+  const badgeH = 40;
+  const badgeX = hx + 32;
+  const badgeY = fy + (FOOTER_H - 8 - badgeH) / 2;
+
+  ctx.fillStyle = THEME.greenLight;
+  ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+
+  ctx.strokeStyle = THEME.green;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+
+  ctx.fillStyle = THEME.green;
+  ctx.textAlign = 'center';
+  ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1);
+
+  // Center: "ONE TEAM. ONE FAMILY."
+  ctx.fillStyle = THEME.greenLight;
+  ctx.font = `bold 20px "Trebuchet MS", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(
+    'ONE TEAM. ONE FAMILY.',
+    hx + hw / 2,
+    fy + (FOOTER_H - 8) / 2
+  );
+
+  // Right: date
+  ctx.fillStyle = THEME.greenLight;
+  ctx.font = `bold 18px "Courier New", monospace`;
+  ctx.textAlign = 'right';
+  ctx.fillText(
+    new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(),
+    hx + hw - 32,
+    fy + (FOOTER_H - 8) / 2
+  );
 
   /* ---------- PHOTO (4:3 slot, no crop) ---------- */
-  const slotTop = hy + hh + 30;
-  const slotBottom = fy - 30;
+  const slotTop = hy + hh + 24;
+  const slotBottom = fy - 24;
   const slotMaxH = slotBottom - slotTop;
   const slotMaxW = contentW;
 
@@ -468,27 +537,31 @@ async function generateDepartmentImage(imgSrc, departmentName) {
   const photoX = contentX + (contentW - photoW) / 2;
   const photoY = slotTop + (slotMaxH - photoH) / 2;
 
+  // Sticker shadow
   ctx.fillStyle = THEME.greenLight;
   ctx.fillRect(photoX + 10, photoY + 10, photoW, photoH);
 
+  // Frame
   ctx.fillStyle = THEME.green;
   ctx.fillRect(photoX - 8, photoY - 8, photoW + 16, photoH + 16);
 
   ctx.fillStyle = THEME.white;
   ctx.fillRect(photoX - 3, photoY - 3, photoW + 6, photoH + 6);
 
+  // Draw photo — CONTAIN (no crop, letterboxed if needed)
   const img = await loadImage(imgSrc);
   drawImageContain(ctx, img, photoX, photoY, photoW, photoH, THEME.greenPale);
 
+  // Thin outline
   ctx.strokeStyle = THEME.green;
   ctx.lineWidth = 2;
   ctx.strokeRect(photoX, photoY, photoW, photoH);
 
+  // Corner sticker tag
   drawStickerTag(ctx, photoX + 22, photoY + 22, 'PHOTO 01', -4);
 
   return canvas.toDataURL('image/png');
 }
-
 /* ================================================================
    RETRO DRAWING HELPERS
    ================================================================ */
